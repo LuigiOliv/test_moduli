@@ -13,7 +13,25 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>	
+    <head>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <script type="text/babel" data-type="module" src="./utils.js"></script>
+    <script type="text/babel" data-type="module" src="./storage.js"></script>
+    <script type="text/babel" data-type="module" src="./constants.js"></script>
+    <script type="text/babel" data-type="module" src="./StatsEngine.js"></script> 
+
+    <script type="text/babel" data-type="module" src="./components/AuthPage.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/MatchesPage.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/MatchRegistrationView.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/MatchDetailRouter.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/MatchTeamAssignment.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/MatchVotingInterface.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/MatchResultsView.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/ClassifichePage.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/PlayerProfile.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/ChartUtils.jsx"></script>
+    <script type="text/babel" data-type="module" src="./components/AdminAndSettings.jsx"></script>
     <script>
       const firebaseConfig = {
         apiKey: "AIzaSyC_81ukybf3QOFFvJcgDWMgbor4Z7k1bgI",
@@ -333,4 +351,5 @@ try {
     document.getElementById('root').innerHTML = '<div style=\"color:white;text-align:center;padding:50px;\"><h2>Errore caricamento</h2><p>' + error.message + '</p></div>';
 }
 </body>
+
 </html>
