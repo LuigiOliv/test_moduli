@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcetto Rating App</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>	
+    
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyC_81ukybf3QOFFvJcgDWMgbor4Z7k1bgI",
+        authDomain: "calcetto-af1e0.firebaseapp.com",
+        projectId: "calcetto-af1e0",
+        storageBucket: "calcetto-af1e0.firebasestorage.app",
+        messagingSenderId: "1035881443344",
+        appId: "1:1035881443344:web:2690813dc00bce70d19a95"
+      };
+      firebase.initializeApp(firebaseConfig);
+      // Esposto globalmente per l'uso nei moduli JS (come storage.js)
+      window.db = firebase.firestore(); 
+      window.React = React; // Utile per Babel Standalone
+    </script>
+    </head>
+<body>
+    <div id="root">
+        <div className="login-container">
+            <div className="login-card">
+                <h2>⚽ Caricamento...</h2>
+                <p>Se rimani bloccato qui, prova a ricaricare la pagina</p>
+            </div>
+        </div>
+    </div>
+
+// index.html - Sezione 
+
+<script type="text/babel">
+
+import utils from './utils.js';
+import storage from './storage.js';
+
+// --- Importazioni Componenti ---
+import AuthPage from './components/AuthPage.jsx';
+import MatchesPage from './components/MatchesPage.jsx';
+import MatchDetailRouter from './components/MatchDetailRouter.jsx';
+import ClassifichePage from './components/ClassifichePage.jsx';
+import PlayerProfile from './components/PlayerProfile.jsx';
+// Importa le pagine accorpate da AdminAndSettings.jsx
+import { SettingsPage, AdminPage } from './components/AdminAndSettings.jsx'; 
+// Importa il motore di calcolo (non è un componente React)
+import STATS_ENGINE from './StatsEngine.js'; 
+
+
+const { useState, useEffect, useCallback, useMemo } = window.React;
+const { BrowserRouter, Route, Link, Routes } = window.ReactRouterDOM;
+
+// --- Componente APP Principale ---
+function App() {
+    // Stato Autenticazione
+    const [currentUser, setCurrentUser] = useState(storage.getCurrentUser());
+    
+    // Stato Dati Globali
+    const [users, setUsers] = useState([]);
+    const [matches, setMatches] = useState([]);
+    const [votes, setVotes] = useState([]);
+    const [loadingData, setLoadingData] = useState(false);
+    
+    // Stato Navigazione
+    const [activeTab, setActiveTab] = useState('partite'); // partite, classifiche, profilo, settings, admin
+    const [selectedMatchId, setSelectedMatchId] = useState(null); // Per la vista di dettaglio partita
+    const [viewingProfileId, setViewingProfileId] = useState(null); // Per la vista di un profilo esterno
+
+    // --- Fetch Dati ---
+    const fetchData = useCallback(async () => {
+        if (!currentUser) return;
+
+        setLoadingData(true);
+        try {
+            const [fetchedUsers, fetchedMatches, fetchedVotes] = await Promise.all([
+                storage.getUsers(),
+                storage.getMatches(),
+                storage.getVotes()
+            ]);
+            
+            setUsers(fetchedUsers);
+            setVotes(fetchedVotes);
+            
+            // Assicurati che le partite siano ordinate (es. prossime prime)
+            fetchedMatches.sort((a, b) => new Date(a.date) - new Date(b.date));
+            setMatches(fetchedMatches);
+            
+            // Aggiorna l'utente corrente con i dati più freschi (es. se isAdmin è cambiato)
+            const updatedCurrentUser = fetchedUsers.find(u => u.id === currentUser.id);
+            if (updatedCurrentUser) {
+                setCurrentUser(updatedCurrentUser);
+                storage.setCurrentUser(updatedCurrentUser);
+            }
+
+        } catch (error) {
+            console.error("Errore nel caricamento dati:", error);
+            // Qui si potrebbe mostrare un errore visibile all'utente
+        } finally {
+            setLoadingData(false);
+        }
+    }, [currentUser]);
+
+    // Carica i dati all'avvio e quando l'utente cambia
+    useEffect(() => {
+        if (currentUser) {
+            fetchData();
+        }
+    }, [currentUser, fetchData]);
+    
+    // --- Funzioni di Azione Globale ---
+
+    const handleLogout = () => {
+        storage.signOut();
+        setCurrentUser(null);
+        setActiveTab('partite');
+        setSelectedMatchId(null);
+        setViewingProfileId(null);
+    };
+
+    const handleSelectMatch = (matchId) => {
+        setSelectedMatchId(matchId);
+    };
+
+    const handleBackToMatches = () => {
+        setSelectedMatchId(null);
+    };
+    
+    const handleViewProfile = (playerId) => {
+        setViewingProfileId(playerId);
+    };
+
+    const handleBackFromProfile = () => {
+        setViewingProfileId(null);
+    };
+
+    // --- Logica di Routing/Contenuto ---
+
+    const renderContent = () => {
+        if (!currentUser) {
+            return <AuthPage setCurrentUser={setCurrentUser} />;
+        }
+
+        if (loadingData) {
+            return (
+                <div className="loading-screen full-page-loading">
+                    <div className="spinner"></div>
+                    <p>Caricamento dati...</p>
+                </div>
+            );
+        }
+        
+        // Vista Dettaglio Profilo Esterno
+        if (viewingProfileId) {
+            const playerToView = users.find(u => u.id === viewingProfileId);
+            return (
+                <PlayerProfile 
+                    player={playerToView}
+                    users={users}
+                    votes={votes}
+                    matches={matches}
+                    onBack={handleBackFromProfile}
+                    isOwnProfile={false}
+                />
+            );
+        }
+        
+        // Vista Dettaglio Partita
+        if (selectedMatchId) {
+            const selectedMatch = matches.find(m => m.id === selectedMatchId);
+            return (
+                <MatchDetailRouter
+                    match={selectedMatch}
+                    currentUser={currentUser}
+                    users={users}
+                    votes={votes}
+                    onBack={handleBackToMatches}
+                    onVoteSubmit={fetchData} // Ricarica dopo il voto
+                    onRegistrationChange={fetchData} // Ricarica dopo iscrizione
+                    onMatchUpdate={fetchData} // Ricarica dopo azione Admin
+                />
+            );
+        }
+
+        // --- Vista Pagina Attiva ---
+        switch (activeTab) {
+            case 'partite':
+                return (
+                    <MatchesPage 
+                        matches={matches} 
+                        currentUser={currentUser} 
+                        users={users} 
+                        onSelectMatch={handleSelectMatch} 
+                        onRefreshData={fetchData} 
+                    />
+                );
+            case 'classifiche':
+                return (
+                    <ClassifichePage 
+                        users={users} 
+                        votes={votes} 
+                        currentUser={currentUser} 
+                        onViewProfile={handleViewProfile} 
+                    />
+                );
+            case 'profilo':
+                // Il profilo personale mostra l'utente corrente
+                return (
+                    <PlayerProfile 
+                        player={currentUser} 
+                        users={users}
+                        votes={votes} 
+                        matches={matches}
+                        isOwnProfile={true} 
+                    />
+                );
+            case 'settings':
+                return (
+                    <SettingsPage 
+                        user={currentUser} 
+                        onUpdateUser={async (updatedUser) => { 
+                            await storage.updateUser(updatedUser); 
+                            // Aggiorna lo stato globale e locale
+                            const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u); 
+                            setUsers(updatedUsers); 
+                            setCurrentUser(updatedUser); 
+                            storage.setCurrentUser(updatedUser); 
+                        }} 
+                    />
+                );
+            case 'admin':
+                if (currentUser.isAdmin) {
+                    return (
+                        <AdminPage users={users} onRefreshData={fetchData} />
+                    );
+                }
+                // Fallback se un non-admin prova ad accedere
+                return <div>Accesso negato.</div>; 
+                
+            case 'debug':
+                if (currentUser.isAdmin) {
+                    // Placeholder per la pagina di Debug
+                    return (
+                        <div className="admin-page">
+                            <h2>🐛 Pagina di Debug (Admin)</h2>
+                            <p>Stato Utenti: {users.length}</p>
+                            <p>Stato Partite: {matches.length}</p>
+                            <p>Stato Voti: {votes.length}</p>
+                            <button className="button primary" onClick={fetchData}>Forza Refresh</button>
+                        </div>
+                    );
+                }
+                return <div>Accesso negato.</div>; 
+
+            default:
+                return <div>Sezione non trovata.</div>;
+        }
+    };
+
+
+    return (
+        <div className="app-container">
+            {/* Header / Navbar */}
+            {currentUser && (
+                <header className="app-header">
+                    <div className="header-title">Calcetto Rating</div>
+                    <div className="header-actions">
+                        <span className="user-nickname">{currentUser.nickname || currentUser.displayName}</span>
+                        <button className="button small-button secondary" onClick={handleLogout}>Logout</button>
+                    </div>
+                </header>
+            )}
+
+            {/* Contenuto Principale */}
+            <main className="app-main-content">
+                {renderContent()}
+            </main>
+
+            {/* Menu Navigazione (Footer) */}
+            {currentUser && (
+                <nav className="app-nav-footer">
+                    <button 
+                        className={`nav-item ${activeTab === 'partite' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('partite'); setSelectedMatchId(null); setViewingProfileId(null); }}
+                    >
+                        ⚽ Partite
+                    </button>
+                    <button 
+                        className={`nav-item ${activeTab === 'classifiche' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('classifiche'); setSelectedMatchId(null); setViewingProfileId(null); }}
+                    >
+                        🏆 Rank
+                    </button>
+                    <button 
+                        className={`nav-item ${activeTab === 'profilo' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('profilo'); setSelectedMatchId(null); setViewingProfileId(null); }}
+                    >
+                        👤 Profilo
+                    </button>
+                    <button 
+                        className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('settings'); setSelectedMatchId(null); setViewingProfileId(null); }}
+                    >
+                        ⚙️ Settings
+                    </button>
+                    {currentUser.isAdmin && (
+                        <button 
+                            className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}
+                            onClick={() => { setActiveTab('admin'); setSelectedMatchId(null); setViewingProfileId(null); }}
+                        >
+                            🛡️ Admin
+                        </button>
+                    )}
+                </nav>
+            )}
+        </div>
+    );
+}
+
+try {
+    ReactDOM.render(<App />, document.getElementById('root'));
+} catch (error) {
+    document.getElementById('root').innerHTML = '<div style=\"color:white;text-align:center;padding:50px;\"><h2>Errore caricamento</h2><p>' + error.message + '</p></div>';
+}
+</body>
+</html>
