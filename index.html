@@ -4,40 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calcetto Rating App</title>
-    <link rel="stylesheet" href="styles.css">
-    
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>	
-    
-    <script>
-      const firebaseConfig = {
-        apiKey: "AIzaSyC_81ukybf3QOFFvJcgDWMgbor4Z7k1bgI",
-        authDomain: "calcetto-af1e0.firebaseapp.com",
-        projectId: "calcetto-af1e0",
-        storageBucket: "calcetto-af1e0.firebasestorage.app",
-        messagingSenderId: "1035881443344",
-        appId: "1:1035881443344:web:2690813dc00bce70d19a95"
-      };
-      firebase.initializeApp(firebaseConfig);
-      // Esposto globalmente per l'uso nei moduli JS (come storage.js)
-      window.db = firebase.firestore(); 
-      window.React = React; // Utile per Babel Standalone
-    </script>
-    </head>
+</head>
 <body>
-    <div id="root">
-        <div className="login-container">
-
-            <script type="module" src="src/main.jsx"></script>
-            </body>
-            </html>
-    ReactDOM.render(<App />, document.getElementById('root'));
-} catch (error) {
-    document.getElementById('root').innerHTML = '<div style=\"color:white;text-align:center;padding:50px;\"><h2>Errore caricamento</h2><p>' + error.message + '</p></div>';
-}
+    <div id="root"></div>
+    <script type="module" src="./src/main.jsx"></script>
 </body>
 </html>

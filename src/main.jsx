@@ -1,39 +1,25 @@
-// src/main.jsx
-// © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
-
-// Importa il componente App e i moduli React globali
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import App from './components/App.jsx';
+import './styles.css';
 
-// Dobbiamo definire le variabili globali React qui se stiamo usando Babel Standalone
-// e non un bundler come Webpack/Vite.
-const { useState, useEffect, useRef } = window.React;
+// Firebase initialization
+import { initializeApp } from 'firebase/app';
 
-/**
- * Funzione per il rendering dell'applicazione React.
- */
-function initializeApp() {
-    const rootElement = document.getElementById('root');
+const firebaseConfig = {
+  apiKey: "AIzaSyC_81ukybf3QOFFvJcgDWMgbor4Z7k1bgI",
+  authDomain: "calcetto-af1e0.firebaseapp.com",
+  projectId: "calcetto-af1e0",
+  storageBucket: "calcetto-af1e0.firebasestorage.app",
+  messagingSenderId: "1035881443344",
+  appId: "1:1035881443344:web:2690813dc00bce70d19a95"
+};
 
-    if (!rootElement) {
-        console.error("Elemento radice '#root' non trovato.");
-        return;
-    }
+initializeApp(firebaseConfig);
 
-    // Qui App viene importato e usato come componente principale.
-    try {
-        ReactDOM.render(React.createElement(App), rootElement);
-    } catch (error) {
-        console.error("Errore durante il rendering di React:", error);
-        // Visualizza un messaggio di errore leggibile se il caricamento fallisce
-        rootElement.innerHTML = `
-            <div style="color:white;text-align:center;padding:50px;">
-                <h2>⚠️ Errore caricamento Moduli</h2>
-                <p>Verifica che tutti i file (constants.js, storage.js, utils.js, e i componenti) siano presenti nella cartella 'src/' e che l'ordine degli script in index.html sia corretto.</p>
-                <p>Dettaglio Errore: ${error.message}</p>
-            </div>
-        `;
-    }
-}
-
-// Avvia l'applicazione solo quando il DOM è pronto.
-document.addEventListener('DOMContentLoaded', initializeApp);
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

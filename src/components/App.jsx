@@ -1,29 +1,27 @@
-// src/components/App.jsx
-// Minimal App entry to avoid JSX/module import errors while we stabilize the project.
+import { useState, useEffect } from 'react';
 
-const { useState, useEffect } = window.React || {};
+export default function App() {
+    const [now, setNow] = useState(new Date());
 
-function App() {
-    const [now, setNow] = (useState && useState(new Date())) || [new Date(), () => {}];
-
-    useEffect && useEffect(() => {
-        const t = setInterval(() => {
+    useEffect(() => {
+        const interval = setInterval(() => {
             setNow(new Date());
         }, 1000);
-        return () => clearInterval(t);
+        return () => clearInterval(interval);
     }, []);
 
-    return window.React.createElement(
-        'div',
-        { className: 'app-container' },
-        window.React.createElement('header', { className: 'app-header' },
-            window.React.createElement('div', { className: 'header-title' }, 'Calcetto Rating (minimal)')
-        ),
-        window.React.createElement('main', { className: 'app-main-content' },
-            window.React.createElement('h2', null, 'App loaded'),
-            window.React.createElement('p', null, 'Ora: ' + now.toLocaleTimeString())
-        )
+    return (
+        <div className="app-container">
+            <header className="app-header">
+                <div className="header-title">⚽ Calcetto Rating v3</div>
+            </header>
+            <main className="app-main-content">
+                <h2>✅ App Loaded (Vite + React)</h2>
+                <p>Current time: {now.toLocaleTimeString()}</p>
+                <p style={{ marginTop: '20px', fontSize: '12px', color: '#666' }}>
+                    Full app features coming soon. This is the Vite build setup.
+                </p>
+            </main>
+        </div>
     );
 }
-
-export default App;
