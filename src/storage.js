@@ -28,10 +28,25 @@ import {
   signOut,
 } from 'firebase/auth';
 
-// Firebase config is initialized in main.jsx
-const db = getFirestore();
-const auth = getAuth();
-const googleProvider = new GoogleAuthProvider();
+// Lazy getters to ensure Firebase is initialized first
+let db = null;
+let auth = null;
+let googleProvider = null;
+
+const getDb = () => {
+  if (!db) db = getFirestore();
+  return db;
+};
+
+const getAuthInstance = () => {
+  if (!auth) auth = getAuth();
+  return auth;
+};
+
+const getGoogleProvider = () => {
+  if (!googleProvider) googleProvider = new GoogleAuthProvider();
+  return googleProvider;
+};
 
 /**
  * Funzione di utilità per gestire gli errori Firestore.
@@ -55,7 +70,7 @@ export const storage = {
      */
     getUsers: async () => {
         try {
-            const usersRef = collection(db, 'users');
+            const usersRef = collection(getDb(), 'users');
             const snapshot = await getDocs(usersRef);
             return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (error) {
@@ -69,7 +84,7 @@ export const storage = {
      */
     updateUser: async (user) => {
         try {
-            const userRef = doc(db, 'users', user.id);
+            const userRef = doc(getDb(), 'users', user.id);
             await setDoc(userRef, user, { merge: true });
         } catch (error) {
             handleError('l\'aggiornamento dell\'utente', error);
@@ -83,7 +98,7 @@ export const storage = {
      */
     checkAndAddUser: async (firebaseUser) => {
         try {
-            const userRef = doc(db, 'users', firebaseUser.uid);
+            const userRef = doc(getDb(), 'users', firebaseUser.uid);
             const userDoc = await getDoc(userRef);
 
             if (userDoc.exists()) {
@@ -142,8 +157,7 @@ export const storage = {
     createMatch: async (match) => {
         try {
             const dateToSave = match.date instanceof Date ? Timestamp.fromDate(match.date) : match.date;
-            const matchesRef = collection(db, 'matches');
-            const docRef = await getDocs(matchesRef);
+            const matchesRef = collection(getDb(), 'matches');
             const newId = doc(matchesRef).id;
             await setDoc(doc(matchesRef, newId), { ...match, date: dateToSave });
             return newId;
