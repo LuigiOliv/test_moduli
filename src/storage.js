@@ -2,20 +2,42 @@
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
 // =========================================================================
-// INIZIALIZZAZIONE
+// FIREBASE INITIALIZATION (Modular SDK)
 // =========================================================================
 
-// La variabile 'db' è esposta globalmente in index.html dopo l'inizializzazione di Firebase.
-// Assicurati che 'window.db' sia disponibile.
-const db = window.db; 
-const auth = firebase.auth(); 
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  arrayUnion,
+  arrayRemove,
+  serverTimestamp,
+  query,
+  orderBy,
+  Timestamp,
+} from 'firebase/firestore';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth';
+
+// Firebase config is initialized in main.jsx
+const db = getFirestore();
+const auth = getAuth();
+const googleProvider = new GoogleAuthProvider();
 
 /**
  * Funzione di utilità per gestire gli errori Firestore.
  */
 const handleError = (action, error) => {
     console.error(`Errore durante ${action}:`, error);
-    // Qui puoi aggiungere logica per mostrare un messaggio di errore all'utente se necessario
     throw new Error(`Impossibile completare l'azione di ${action}.`);
 };
 
@@ -33,7 +55,8 @@ export const storage = {
      */
     getUsers: async () => {
         try {
-            const snapshot = await db.collection('users').get();
+            const usersRef = collection(db, 'users');
+            const snapshot = await getDocs(usersRef);
             return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (error) {
             handleError('il recupero degli utenti', error);
@@ -46,7 +69,8 @@ export const storage = {
      */
     updateUser: async (user) => {
         try {
-            await db.collection('users').doc(user.id).set(user, { merge: true });
+            const userRef = doc(db, 'users', user.id);
+            await setDoc(userRef, user, { merge: true });
         } catch (error) {
             handleError('l\'aggiornamento dell\'utente', error);
         }
@@ -59,30 +83,30 @@ export const storage = {
      */
     checkAndAddUser: async (firebaseUser) => {
         try {
-            const docRef = db.collection('users').doc(firebaseUser.uid);
-            const doc = await docRef.get();
+            const userRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userRef);
 
-            if (doc.exists) {
+            if (userDoc.exists()) {
                 // Utente esistente: aggiorna l'ultimo login
-                const userData = doc.data();
-                await docRef.update({
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                const userData = userDoc.data();
+                await updateDoc(userRef, {
+                    lastLogin: serverTimestamp()
                 });
-                return { id: doc.id, ...userData };
+                return { id: userDoc.id, ...userData };
             } else {
                 // Nuovo utente: crea il profilo base
                 const newUser = {
                     id: firebaseUser.uid,
                     displayName: firebaseUser.displayName || 'Nuovo Giocatore',
                     email: firebaseUser.email,
-                    isAdmin: false, // Default: non admin
+                    isAdmin: false,
                     isGoalkeeper: false,
                     role: 'Universale',
                     avatarUrl: firebaseUser.photoURL || '',
-                    registrationDate: firebase.firestore.FieldValue.serverTimestamp(),
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                    registrationDate: serverTimestamp(),
+                    lastLogin: serverTimestamp()
                 };
-                await docRef.set(newUser);
+                await setDoc(userRef, newUser);
                 return newUser;
             }
         } catch (error) {
@@ -98,13 +122,13 @@ export const storage = {
      */
     getMatches: async () => {
         try {
-            const snapshot = await db.collection('matches')
-                .orderBy('date', 'desc')
-                .get();
+            const matchesRef = collection(db, 'matches');
+            const q = query(matchesRef, orderBy('date', 'desc'));
+            const snapshot = await getDocs(q);
             return snapshot.docs.map(doc => ({ 
                 id: doc.id, 
                 ...doc.data(),
-                date: doc.data().date instanceof firebase.firestore.Timestamp ? doc.data().date.toDate().toISOString() : doc.data().date
+                date: doc.data().date instanceof Timestamp ? doc.data().date.toDate().toISOString() : doc.data().date
             }));
         } catch (error) {
             handleError('il recupero delle partite', error);
@@ -117,14 +141,12 @@ export const storage = {
      */
     createMatch: async (match) => {
         try {
-            // Conversione della data in Timestamp se necessario, o assicurati che sia stringa ISO
-            const dateToSave = match.date instanceof Date ? firebase.firestore.Timestamp.fromDate(match.date) : match.date;
-
-            const docRef = await db.collection('matches').add({
-                ...match,
-                date: dateToSave
-            });
-            return docRef.id;
+            const dateToSave = match.date instanceof Date ? Timestamp.fromDate(match.date) : match.date;
+            const matchesRef = collection(db, 'matches');
+            const docRef = await getDocs(matchesRef);
+            const newId = doc(matchesRef).id;
+            await setDoc(doc(matchesRef, newId), { ...match, date: dateToSave });
+            return newId;
         } catch (error) {
             handleError('la creazione della partita', error);
         }
@@ -137,7 +159,8 @@ export const storage = {
      */
     updateMatchStatus: async (matchId, data) => {
         try {
-            await db.collection('matches').doc(matchId).update(data);
+            const matchRef = doc(db, 'matches', matchId);
+            await updateDoc(matchRef, data);
         } catch (error) {
             handleError('l\'aggiornamento dello stato della partita', error);
         }
@@ -149,7 +172,8 @@ export const storage = {
      */
     deleteMatch: async (matchId) => {
         try {
-            await db.collection('matches').doc(matchId).delete();
+            const matchRef = doc(db, 'matches', matchId);
+            await deleteDoc(matchRef);
         } catch (error) {
             handleError('l\'eliminazione della partita', error);
         }
@@ -167,10 +191,8 @@ export const storage = {
             if (now > deadlineDate) {
                 try {
                     console.log(`Aggiornamento stato partita ${match.id}: chiusura iscrizioni.`);
-                    await db.collection('matches').doc(match.id).update({
-                        status: 'closed'
-                    });
-                    // Ritorna true per indicare che c'è stato un cambiamento e l'interfaccia deve aggiornarsi
+                    const matchRef = doc(db, 'matches', match.id);
+                    await updateDoc(matchRef, { status: 'closed' });
                     return true;
                 } catch (error) {
                     handleError('l\'aggiornamento automatico dello stato', error);
@@ -188,17 +210,11 @@ export const storage = {
      */
     toggleMatchParticipation: async (matchId, userId, isJoining) => {
         try {
-            const matchRef = db.collection('matches').doc(matchId);
-            const field = 'participants';
-            
-            const updateData = {};
-            if (isJoining) {
-                updateData[field] = firebase.firestore.FieldValue.arrayUnion(userId);
-            } else {
-                updateData[field] = firebase.firestore.FieldValue.arrayRemove(userId);
-            }
-
-            await matchRef.update(updateData);
+            const matchRef = doc(db, 'matches', matchId);
+            const updateData = {
+                participants: isJoining ? arrayUnion(userId) : arrayRemove(userId)
+            };
+            await updateDoc(matchRef, updateData);
         } catch (error) {
             handleError('l\'iscrizione/disiscrizione alla partita', error);
         }
@@ -213,7 +229,8 @@ export const storage = {
      */
     getVotes: async () => {
         try {
-            const snapshot = await db.collection('votes').get();
+            const votesRef = collection(db, 'votes');
+            const snapshot = await getDocs(votesRef);
             return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (error) {
             handleError('il recupero dei voti', error);
@@ -229,18 +246,16 @@ export const storage = {
      */
     saveVote: async (voteData, matchId, voterId, votedPlayerId) => {
         try {
-            // ID unico per il voto: matchId_voterId_votedPlayerId
             const voteId = `${matchId}_${voterId}_${votedPlayerId}`;
-            
+            const voteRef = doc(db, 'votes', voteId);
             const fullVoteData = {
                 ...voteData,
                 matchId,
                 voterId,
                 votedPlayerId,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                timestamp: serverTimestamp()
             };
-
-            await db.collection('votes').doc(voteId).set(fullVoteData);
+            await setDoc(voteRef, fullVoteData);
         } catch (error) {
             handleError('il salvataggio del voto', error);
         }
@@ -253,9 +268,8 @@ export const storage = {
      * @returns {Promise<object>} L'oggetto utente autenticato.
      */
     handleLogin: async () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
         try {
-            const result = await auth.signInWithPopup(provider);
+            const result = await signInWithPopup(auth, googleProvider);
             const firebaseUser = result.user;
             const user = await storage.checkAndAddUser(firebaseUser);
             storage.setCurrentUser(user);
@@ -270,9 +284,8 @@ export const storage = {
      */
     handleLogout: async () => {
         try {
-            await auth.signOut();
+            await signOut(auth);
             localStorage.removeItem('calcetto_current_user');
-            // Necessario un ricaricamento della pagina o un aggiornamento dello stato in App.jsx
         } catch (error) {
             handleError('il logout', error);
         }
@@ -300,6 +313,13 @@ export const storage = {
      */
     removeCurrentUser: () => {
         localStorage.removeItem('calcetto_current_user');
+    },
+
+    /**
+     * Alias per handleLogout (chiamato da App.jsx).
+     */
+    signOut: async () => {
+        return storage.handleLogout();
     }
 };
 
