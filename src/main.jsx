@@ -1,8 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
-// Initialize Firebase FIRST
-import './firebase.js';
+// Initialize Firebase FIRST (import and use to prevent tree-shaking)
+import { db, auth } from './firebase.js';
+console.log('Firebase initialized:', !!db, !!auth);
 
 // Now import components
 import App from './components/App.jsx';
