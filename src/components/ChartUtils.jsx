@@ -2,6 +2,33 @@
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
 import { useEffect, useRef } from 'react';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    RadialLinearScale,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+} from 'chart.js';
+
+// Register Chart.js components
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    RadialLinearScale,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+);
 
 /**
  * Componente Wrapper per Chart.js.
@@ -24,7 +51,7 @@ function ChartComponent({ chartData, chartType, options = {} }) {
         }
 
         // Crea una nuova istanza di Chart
-        chartInstanceRef.current = new window.Chart(ctx, {
+        chartInstanceRef.current = new ChartJS(ctx, {
             type: chartType,
             data: chartData,
             options: {
