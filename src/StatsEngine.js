@@ -39,8 +39,11 @@ const STATS_ENGINE = (function() {
         
         // Aggiusta con la media dei voti skill (peso minore)
         const allSkillVotes = playerVotes
-            .flatMap(v => Object.values(v.skillVotes || {}))
-            .filter(v => v !== undefined);
+            .flatMap(v => {
+                if (!v.skillVotes || typeof v.skillVotes !== 'object') return [];
+                return Object.values(v.skillVotes);
+            })
+            .filter(v => v !== undefined && v !== null);
             
         const avgSkillVote = allSkillVotes.length > 0 ? 
             allSkillVotes.reduce((sum, vote) => sum + vote, 0) / allSkillVotes.length : 6.0;
@@ -140,7 +143,17 @@ const STATS_ENGINE = (function() {
      * @returns {object} Oggetto con medie skill { "Passaggio": 7.5, ... }
      */
     const calculateAvgSkills = (playerVotes, role) => {
-        const relevantSkills = Object.values(SKILLS[role] || SKILLS.Universale).flat();
+        // Safety check for role
+        if (!role || !SKILLS[role]) {
+            role = 'Universale';
+        }
+        
+        const roleSkills = SKILLS[role];
+        if (!roleSkills || typeof roleSkills !== 'object') {
+            return {};
+        }
+        
+        const relevantSkills = Object.values(roleSkills).flat();
         const skillTotals = {};
         const skillCounts = {};
         

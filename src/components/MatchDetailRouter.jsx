@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { MatchVotingInterface, MatchResultView, MatchTeamAssignment } from './Match/MatchDetails.jsx';
+import { MatchRegistrationView } from './Match.jsx';
 import storage from '../storage.js';
 
 /**
