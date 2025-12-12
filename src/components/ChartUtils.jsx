@@ -10,13 +10,16 @@ import {
     LineElement,
     BarElement,
     RadialLinearScale,
+    LineController,
+    RadarController,
+    BarController,
     Title,
     Tooltip,
     Legend,
     Filler
 } from 'chart.js';
 
-// Register Chart.js components
+// Register Chart.js components including controllers
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -24,6 +27,9 @@ ChartJS.register(
     LineElement,
     BarElement,
     RadialLinearScale,
+    LineController,
+    RadarController,
+    BarController,
     Title,
     Tooltip,
     Legend,
