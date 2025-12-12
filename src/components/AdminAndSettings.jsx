@@ -1,11 +1,10 @@
 // src/components/AdminAndSettings.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
+import { useState, useEffect } from 'react';
 import storage from '../storage.js';
 import utils from '../utils.js';
 import { ROLES } from '../constants.js';
-
-const { useState, useEffect } = window.React;
 
 // =========================================================================
 // 1. SETTINGS PAGE (Impostazioni Utente)

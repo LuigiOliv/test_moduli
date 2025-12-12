@@ -1,13 +1,12 @@
 // src/components/MatchesPage.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
+import { useState } from 'react';
 import utils from '../utils.js';
 import storage from '../storage.js';
 
 // 🚨 Importazione Aggiornata: Importa tutti i componenti figli dal modulo Match.jsx
 import { MatchCard, MatchRegistrationView, MatchAdminTools } from './Match.jsx';
-
-const { useState } = window.React;
 
 /**
  * Pagina principale che mostra l'elenco delle partite e permette la navigazione.

@@ -1,11 +1,10 @@
 // src/components/ClassifichePage.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
+import { useState, useMemo } from 'react';
 import utils from '../utils.js';
 import STATS_ENGINE from '../StatsEngine.js'; // 🚨 Importa il motore di calcolo
 import { ROLES, SKILLS, shortSKILLS } from '../constants.js';
-
-const { useState, useMemo } = window.React;
 
 /**
  * Pagina per visualizzare le classifiche (Rating, Skill, Portieri, etc.).

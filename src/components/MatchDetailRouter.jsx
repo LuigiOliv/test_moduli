@@ -1,12 +1,9 @@
 // src/components/MatchDetailRouter.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-
+import { useEffect, useState } from 'react';
 import { MatchVotingInterface, MatchResultView, MatchTeamAssignment } from './Match/MatchDetails.jsx';
-
 import storage from '../storage.js';
-
-const { useEffect, useState } = window.React;
 
 /**
  * Router che visualizza la vista corretta per una partita in base al suo stato.

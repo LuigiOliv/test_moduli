@@ -1,9 +1,8 @@
 // src/components/Navigation/Header.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
+import { useState } from 'react';
 import utils from '../../utils.js';
-
-const { useState } = window.React;
 
 /**
  * Componente Header (Testata superiore con info utente e menu a tendina)

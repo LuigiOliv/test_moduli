@@ -1,10 +1,9 @@
 // src/components/Match.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
+import { useState, useMemo } from 'react';
 import utils from '../utils.js';
 import storage from '../storage.js';
-
-const { useState, useMemo } = window.React;
 
 // =========================================================================
 // 1. MATCH CARD (Scheda Partita Singola)

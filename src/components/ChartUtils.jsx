@@ -1,7 +1,7 @@
 // src/components/ChartUtils.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-const { useEffect, useRef } = window.React;
+import { useEffect, useRef } from 'react';
 
 /**
  * Componente Wrapper per Chart.js.

@@ -1,11 +1,10 @@
 // src/components/Match/MatchDetails.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
+import { useState, useMemo, useCallback } from 'react';
 import utils from '../../utils.js';
 import storage from '../../storage.js';
 import { getSkillsForPlayer, shortSKILLS } from '../../constants.js'; // Importa SKILLS per il voto
-
-const { useState, useMemo, useCallback } = window.React;
 
 // =========================================================================
 // 1. MATCH TEAM ASSIGNMENT (Assegnazione Squadre - Admin)

@@ -1,12 +1,11 @@
 // src/components/PlayerProfile.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
+import { useMemo, useCallback } from 'react';
 import utils from '../utils.js';
 import STATS_ENGINE from '../StatsEngine.js'; // 🚨 Importa il motore di calcolo
 import ChartComponent from './ChartUtils.jsx'; // 🆕 Da creare per i grafici
 import { shortSKILLS } from '../constants.js';
-
-const { useMemo, useCallback } = window.React;
 
 /**
  * Componente per la visualizzazione del profilo di un giocatore (proprio o altrui).
