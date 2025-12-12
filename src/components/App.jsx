@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LoginPage } from './AuthPage.jsx';
 import storage from '../storage.js';
 import Header from './Navigation/Header.jsx';
@@ -20,12 +20,16 @@ export default function App() {
     const [users, setUsers] = useState([]);
     const [votes, setVotes] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Track if data has been loaded to prevent infinite loops
+    const dataLoadedRef = useRef(false);
 
     // ==================== EFFECTS ====================
     
-    // Load all data on mount
+    // Load all data when user logs in
     useEffect(() => {
-        if (currentUser) {
+        if (currentUser && !dataLoadedRef.current) {
+            dataLoadedRef.current = true;
             loadAllData();
         }
     }, [currentUser]);
@@ -60,16 +64,6 @@ export default function App() {
             setMatches(matchesData || []);
             setUsers(usersData || []);
             setVotes(votesData || []);
-
-            // Update current user with fresh data from users collection
-            if (currentUser && usersData.length > 0) {
-                const updatedCurrentUser = usersData.find(u => u.id === currentUser.id);
-                if (updatedCurrentUser) {
-                    console.log("Updating current user with fresh data:", updatedCurrentUser);
-                    setCurrentUser(updatedCurrentUser);
-                    storage.setCurrentUser(updatedCurrentUser);
-                }
-            }
         } catch (error) {
             console.error("Error loading data:", error);
         } finally {
@@ -95,7 +89,8 @@ export default function App() {
         await storage.updateUser(updatedUser);
         setCurrentUser(updatedUser);
         await loadAllData(); // Refresh to get updated user in users array
-    };
+    };dataLoadedRef.current = false; // Reset the flag for next login
+        
 
     const handleSelectMatch = (matchId) => {
         setSelectedMatchId(matchId);
