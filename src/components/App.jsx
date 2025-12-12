@@ -35,17 +35,43 @@ export default function App() {
     const loadAllData = async () => {
         setLoading(true);
         try {
-            const [matchesData, usersData, votesData] = await Promise.all([
-                storage.getMatches(),
-                storage.getUsers(),
-                storage.getVotes()
-            ]);
-            setMatches(matchesData);
-            setUsers(usersData);
-            setVotes(votesData);
+            // Load data independently to avoid one failure blocking others
+            const matchesData = await storage.getMatches().catch(err => {
+                console.error("Error loading matches:", err);
+                return [];
+            });
+            
+            const usersData = await storage.getUsers().catch(err => {
+                console.error("Error loading users:", err);
+                return [];
+            });
+            
+            const votesData = await storage.getVotes().catch(err => {
+                console.error("Error loading votes:", err);
+                return [];
+            });
+
+            console.log("Data loaded:", {
+                matches: matchesData.length,
+                users: usersData.length,
+                votes: votesData.length
+            });
+
+            setMatches(matchesData || []);
+            setUsers(usersData || []);
+            setVotes(votesData || []);
+
+            // Update current user with fresh data from users collection
+            if (currentUser && usersData.length > 0) {
+                const updatedCurrentUser = usersData.find(u => u.id === currentUser.id);
+                if (updatedCurrentUser) {
+                    console.log("Updating current user with fresh data:", updatedCurrentUser);
+                    setCurrentUser(updatedCurrentUser);
+                    storage.setCurrentUser(updatedCurrentUser);
+                }
+            }
         } catch (error) {
             console.error("Error loading data:", error);
-            alert("Errore nel caricamento dei dati. Riprova.");
         } finally {
             setLoading(false);
         }
