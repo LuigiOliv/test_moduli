@@ -2,7 +2,7 @@
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
 import utils from './utils.js';
-import { ROLES, SKILLS } from './constants.js'; // Importa le costanti
+import { ROLES, SKILLS, getSkillsForPlayer } from './constants.js'; // Importa le costanti
 
 /**
  * Logica Complessa di Calcolo del Rating (Simulazione)
@@ -10,7 +10,7 @@ import { ROLES, SKILLS } from './constants.js'; // Importa le costanti
  * formato di statistiche comprensibile, calcolando il Rating.
  */
 
-const STATS_ENGINE = (function() {
+const STATS_ENGINE = (function () {
 
     /**
      * Calcola il rating di un singolo giocatore in base ai suoi voti.
@@ -20,23 +20,23 @@ const STATS_ENGINE = (function() {
     const calculateRating = (playerVotes) => {
         if (!playerVotes || playerVotes.length === 0) {
             // Rating di base se non ci sono voti
-            return 70.0; 
+            return 70.0;
         }
 
         // Il Rating è calcolato principalmente sulla media dei voti Match (generali)
         const matchVotes = playerVotes.map(v => v.matchVote).filter(v => v !== undefined);
-        
+
         if (matchVotes.length === 0) {
             return 70.0;
         }
 
         const sumMatchVotes = matchVotes.reduce((sum, vote) => sum + vote, 0);
         const avgMatchVote = sumMatchVotes / matchVotes.length;
-        
+
         // Mappa da media 1-10 a rating 50-100 (Formula molto semplificata)
         // Esempio: 5.0 -> 50, 7.5 -> 75, 10.0 -> 100
-        const baseRating = avgMatchVote * 10; 
-        
+        const baseRating = avgMatchVote * 10;
+
         // Aggiusta con la media dei voti skill (peso minore)
         const allSkillVotes = playerVotes
             .flatMap(v => {
@@ -44,12 +44,12 @@ const STATS_ENGINE = (function() {
                 return Object.values(v.skillVotes);
             })
             .filter(v => v !== undefined && v !== null);
-            
-        const avgSkillVote = allSkillVotes.length > 0 ? 
+
+        const avgSkillVote = allSkillVotes.length > 0 ?
             allSkillVotes.reduce((sum, vote) => sum + vote, 0) / allSkillVotes.length : 6.0;
 
         // Piccola correzione basata sulle skill: (AvgSkill - 6.0) * 2
-        const skillCorrection = (avgSkillVote - 6.0) * 2; 
+        const skillCorrection = (avgSkillVote - 6.0) * 2;
 
         let finalRating = baseRating + skillCorrection;
 
@@ -73,7 +73,7 @@ const STATS_ENGINE = (function() {
             acc[vote.votedPlayerId].push(vote);
             return acc;
         }, {});
-        
+
         // Mappa per un accesso rapido ai match a cui ha partecipato l'utente (non solo votato)
         const participationByPlayer = matches.reduce((acc, match) => {
             if (match.participants) {
@@ -89,34 +89,34 @@ const STATS_ENGINE = (function() {
         const statsUsers = users.map(user => {
             const playerVotes = votesByVotedPlayer[user.id] || [];
             const participatedMatches = participationByPlayer[user.id] || [];
-            
+
             // 1. Calcola Rating
             const currentRating = calculateRating(playerVotes);
-            
+
             // 2. Statistiche di Base
             const stats = {
                 rating: currentRating,
                 matchesPlayed: participatedMatches.filter(m => m.status === 'COMPLETED').length,
                 totalVotesReceived: playerVotes.length,
-                
+
                 // 3. Statistiche Vittorie/Sconfitte (Semplificate)
                 wins: 0,
                 losses: 0,
                 draws: 0,
-                
+
                 // 4. Statistiche Skill Medie
-                avgSkills: calculateAvgSkills(playerVotes, user.role),
-                
+                avgSkills: calculateAvgSkills(playerVotes, user),
+
                 // 5. Statistiche Portieri (Se applicabile)
                 // ... (Logica per calcolo Clean Sheets, Gol Subiti, etc.)
-                
+
             };
-            
+
             // Calcolo Wins/Losses/Draws
             participatedMatches.filter(m => m.status === 'COMPLETED' && m.score && m.teams).forEach(match => {
-                const team = match.teams.gialli.includes(user.id) ? 'gialli' : 
-                             match.teams.verdi.includes(user.id) ? 'verdi' : null;
-                
+                const team = match.teams.gialli.includes(user.id) ? 'gialli' :
+                    match.teams.verdi.includes(user.id) ? 'verdi' : null;
+
                 if (team) {
                     if (match.score.gialli > match.score.verdi) {
                         if (team === 'gialli') stats.wins++; else stats.losses++;
@@ -127,36 +127,35 @@ const STATS_ENGINE = (function() {
                     }
                 }
             });
-            
+
             stats.winRate = stats.matchesPlayed > 0 ? utils.round((stats.wins / stats.matchesPlayed) * 100, 1) : 0;
-            
+
             return { ...user, stats };
         });
 
         return statsUsers;
     };
-    
+
     /**
      * Calcola la media di ogni skill votata per un giocatore.
      * @param {Array<object>} playerVotes - Tutti i voti ricevuti dal giocatore.
      * @param {string} role - Ruolo del giocatore per determinare le skill rilevanti.
      * @returns {object} Oggetto con medie skill { "Passaggio": 7.5, ... }
      */
-    const calculateAvgSkills = (playerVotes, role) => {
-        // Safety check for role
-        if (!role || !SKILLS[role]) {
-            role = 'Universale';
-        }
-        
-        const roleSkills = SKILLS[role];
-        if (!roleSkills || typeof roleSkills !== 'object') {
-            return {};
-        }
-        
-        const relevantSkills = Object.values(roleSkills).flat();
+    const calculateAvgSkills = (playerVotes, player) => {  // Pass player object, not role string!
+        // Get correct skill set based on isGoalkeeper
+        const skillSet = getSkillsForPlayer(player);  // This returns SKILLS or SKILLS_GOALKEEPER
+
+        // Flatten all skills from tecniche, tattiche, fisiche, mentali
+        const relevantSkills = [
+            ...skillSet.tecniche,
+            ...skillSet.tattiche,
+            ...skillSet.fisiche,
+            ...skillSet.mentali
+        ];
         const skillTotals = {};
         const skillCounts = {};
-        
+
         if (playerVotes.length === 0) {
             // Se non ci sono voti, ritorna 6.0 per tutte le skill rilevanti
             const defaultSkills = {};
@@ -178,14 +177,14 @@ const STATS_ENGINE = (function() {
 
         const avgSkills = {};
         relevantSkills.forEach(skill => {
-            avgSkills[skill] = skillCounts[skill] > 0 ? 
-                               utils.round(skillTotals[skill] / skillCounts[skill], 2) : 
-                               6.0; // Valore di base se non votato
+            avgSkills[skill] = skillCounts[skill] > 0 ?
+                utils.round(skillTotals[skill] / skillCounts[skill], 2) :
+                6.0; // Valore di base se non votato
         });
 
         return avgSkills;
     };
-    
+
     return {
         getStats,
         calculateRating,
