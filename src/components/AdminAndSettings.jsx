@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import storage from '../storage.js';
 import utils from '../utils.js';
 import { ROLES, SKILLS, getSkillsForPlayer } from '../constants.js';
-import firebase from '../firebase.js';
 
 const db = firebase.firestore();
 
