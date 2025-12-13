@@ -14,18 +14,18 @@ export default function App() {
     const [currentPage, setCurrentPage] = useState('matches'); // 'matches', 'classifiche', 'profile', 'settings', 'admin'
     const [selectedMatchId, setSelectedMatchId] = useState(null);
     const [selectedPlayerId, setSelectedPlayerId] = useState(null);
-    
+
     // Data State
     const [matches, setMatches] = useState([]);
     const [users, setUsers] = useState([]);
     const [votes, setVotes] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Track if data has been loaded to prevent infinite loops
     const dataLoadedRef = useRef(false);
 
     // ==================== EFFECTS ====================
-    
+
     // Load all data when user logs in
     useEffect(() => {
         if (currentUser && !dataLoadedRef.current) {
@@ -35,7 +35,7 @@ export default function App() {
     }, [currentUser]);
 
     // ==================== DATA LOADING ====================
-    
+
     const loadAllData = async () => {
         setLoading(true);
         try {
@@ -44,12 +44,12 @@ export default function App() {
                 console.error("Error loading matches:", err);
                 return [];
             });
-            
+
             const usersData = await storage.getUsers().catch(err => {
                 console.error("Error loading users:", err);
                 return [];
             });
-            
+
             const votesData = await storage.getVotes().catch(err => {
                 console.error("Error loading votes:", err);
                 return [];
@@ -72,7 +72,7 @@ export default function App() {
     };
 
     // ==================== HANDLERS ====================
-    
+
     const handleLogin = (user) => {
         setCurrentUser(user);
     };
@@ -89,8 +89,8 @@ export default function App() {
         await storage.updateUser(updatedUser);
         setCurrentUser(updatedUser);
         await loadAllData(); // Refresh to get updated user in users array
-    };dataLoadedRef.current = false; // Reset the flag for next login
-        
+    }; dataLoadedRef.current = false; // Reset the flag for next login
+
 
     const handleSelectMatch = (matchId) => {
         setSelectedMatchId(matchId);
@@ -113,7 +113,7 @@ export default function App() {
     };
 
     // ==================== RENDER ====================
-    
+
     if (!currentUser) {
         return <LoginPage onLogin={handleLogin} />;
     }
@@ -129,39 +129,39 @@ export default function App() {
     }
 
     // Selected match for detail view
-    const selectedMatch = selectedMatchId 
-        ? matches.find(m => m.id === selectedMatchId) 
+    const selectedMatch = selectedMatchId
+        ? matches.find(m => m.id === selectedMatchId)
         : null;
 
     // Selected player for profile view
-    const selectedPlayer = selectedPlayerId 
-        ? users.find(u => u.id === selectedPlayerId) 
+    const selectedPlayer = selectedPlayerId
+        ? users.find(u => u.id === selectedPlayerId)
         : null;
 
     return (
         <div className="app-container">
-            <Header 
-                user={currentUser} 
+            <Header
+                user={currentUser}
                 onLogout={handleLogout}
                 onOpenSettings={() => setCurrentPage('settings')}
             />
-            
+
             {/* Navigation Tabs */}
             {currentPage !== 'match-detail' && currentPage !== 'player-profile' && (
                 <nav className="nav-tabs">
-                    <button 
+                    <button
                         className={`nav-tab ${currentPage === 'matches' ? 'active' : ''}`}
                         onClick={() => setCurrentPage('matches')}
                     >
                         🏟️ Partite
                     </button>
-                    <button 
+                    <button
                         className={`nav-tab ${currentPage === 'classifiche' ? 'active' : ''}`}
                         onClick={() => setCurrentPage('classifiche')}
                     >
                         🏆 Classifiche
                     </button>
-                    <button 
+                    <button
                         className={`nav-tab ${currentPage === 'profile' ? 'active' : ''}`}
                         onClick={() => {
                             setSelectedPlayerId(currentUser.id);
@@ -170,22 +170,23 @@ export default function App() {
                     >
                         👤 Il Mio Profilo
                     </button>
-                    <button 
+                    <button
                         className={`nav-tab ${currentPage === 'settings' ? 'active' : ''}`}
                         onClick={() => setCurrentPage('settings')}
                     >
                         ⚙️ Impostazioni
                     </button>
                     {currentUser.isAdmin && (
-                        <button 
-                            className={`nav-tab ${currentPage === 'admin' ? 'active' : ''}`ctive' : ''}`}
+                        <button
+                            className={`nav-tab ${currentPage === 'admin' ? 'active' : ''}`}
                             onClick={() => setCurrentPage('admin')}
                         >
                             🔧 Admin
                         </button>
                     )}
                 </nav>
-            )}
+            )
+            }
 
             <main className="app-main-content">
                 {/* MATCHES PAGE */}
@@ -266,6 +267,6 @@ export default function App() {
             <footer className="app-footer">
                 <p>© 2025 Luigi Oliviero | Tutti i diritti riservati</p>
             </footer>
-        </div>
+        </div >
     );
 }
