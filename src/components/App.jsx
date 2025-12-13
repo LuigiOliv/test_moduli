@@ -148,21 +148,21 @@ export default function App() {
             
             {/* Navigation Tabs */}
             {currentPage !== 'match-detail' && currentPage !== 'player-profile' && (
-                <nav className="main-nav">
+                <nav className="nav-tabs">
                     <button 
-                        className={currentPage === 'matches' ? 'active' : ''}
+                        className={`nav-tab ${currentPage === 'matches' ? 'active' : ''}`}
                         onClick={() => setCurrentPage('matches')}
                     >
                         🏟️ Partite
                     </button>
                     <button 
-                        className={currentPage === 'classifiche' ? 'active' : ''}
+                        className={`nav-tab ${currentPage === 'classifiche' ? 'active' : ''}`}
                         onClick={() => setCurrentPage('classifiche')}
                     >
                         🏆 Classifiche
                     </button>
                     <button 
-                        className={currentPage === 'profile' ? 'active' : ''}
+                        className={`nav-tab ${currentPage === 'profile' ? 'active' : ''}`}
                         onClick={() => {
                             setSelectedPlayerId(currentUser.id);
                             setCurrentPage('profile');
@@ -171,14 +171,14 @@ export default function App() {
                         👤 Il Mio Profilo
                     </button>
                     <button 
-                        className={currentPage === 'settings' ? 'active' : ''}
+                        className={`nav-tab ${currentPage === 'settings' ? 'active' : ''}`}
                         onClick={() => setCurrentPage('settings')}
                     >
                         ⚙️ Impostazioni
                     </button>
                     {currentUser.isAdmin && (
                         <button 
-                            className={currentPage === 'admin' ? 'active' : ''}
+                            className={`nav-tab ${currentPage === 'admin' ? 'active' : ''}`ctive' : ''}`}
                             onClick={() => setCurrentPage('admin')}
                         >
                             🔧 Admin

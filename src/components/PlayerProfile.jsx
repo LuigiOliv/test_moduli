@@ -28,9 +28,13 @@ function PlayerProfile({
     // 1. Calcolo Statistiche (Memoizzato)
     // Passiamo tutti gli utenti e i voti a getStats per calcolare le statistiche
     const statsUser = useMemo(() => {
+        console.log("PlayerProfile - Computing stats for player:", player?.id, "users:", users?.length, "votes:", votes?.length);
         // STATS_ENGINE.getStats ritorna l'intera lista, filtriamo il giocatore specifico
         const allStats = STATS_ENGINE.getStats(users, votes, matches);
-        return allStats.find(u => u.id === player.id);
+        console.log("PlayerProfile - All stats computed:", allStats?.length);
+        const found = allStats.find(u => u.id === player.id);
+        console.log("PlayerProfile - Found player stats:", found);
+        return found;
     }, [users, votes, matches, player.id]);
     
     if (!statsUser) {

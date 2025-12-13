@@ -20,7 +20,10 @@ function ClassifichePage({ users, votes, currentUser, onViewProfile }) {
 
     // 1. Calcolo Statistiche (Memoizzato per performance)
     const statsUsers = useMemo(() => {
-        return STATS_ENGINE.getStats(users, votes);
+        console.log("ClassifichePage - Computing stats for users:", users?.length, "votes:", votes?.length);
+        const result = STATS_ENGINE.getStats(users, votes);
+        console.log("ClassifichePage - Stats computed:", result?.length);
+        return result;
     }, [users, votes]);
     
     // 2. Classifiche filtrate e ordinate
