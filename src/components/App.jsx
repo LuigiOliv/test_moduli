@@ -2,7 +2,7 @@
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
 import { useState, useEffect } from 'react';
-import firebase from '../firebase.js';
+import { auth } from '../firebase.js';
 import storage from '../storage.js';
 import { ADMIN_EMAIL } from '../constants.js';
 import Header from './Navigation/Header.jsx';
@@ -41,7 +41,7 @@ function App() {
     const [antonioProfiles, setAntonioProfiles] = useState([]);
 
     useEffect(() => {
-        const unsubscribe = firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+        const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
             if (firebaseUser && firebaseUser.email) {
                 setLoading(true);
                 try {
@@ -67,7 +67,7 @@ function App() {
                     }
                 } catch (error) {
                     console.error('Errore caricamento dati DOPO login:', error);
-                    firebase.auth().signOut();
+                    auth().signOut();
                 } finally {
                     setLoading(false);
                 }
@@ -183,7 +183,7 @@ function App() {
     };
 
     const handleLogout = () => {
-        firebase.auth().signOut();
+        auth().signOut();
         setCurrentUser(null);
         storage.setCurrentUser(null);
     };
