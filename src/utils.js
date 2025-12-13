@@ -1,14 +1,14 @@
 // src/utils.js
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import { getSkillsForPlayer, getShortSkillsForPlayer, DEFAULT_VOTE_VALUE } from './constants.js';
+import { getSkillsForPlayer, getShortSkillsForPlayer, DEFAULT_VOTE_VALU, getFlatSkillListForPlayer } from './constants.js';
 
 // =========================================================================
 // FUNZIONI DI CALCOLO E RATING
 // =========================================================================
 
 export const utils = {
-    
+
     /**
      * Arrotonda un numero a N cifre decimali.
      * @param {number} num - Il numero da arrotondare.
@@ -47,9 +47,9 @@ export const utils = {
         const minOriginal = 1;
         const minNew = 1;
         const maxNew = 10;
-        
+
         if (vote === 0) return 0; // Se il voto è 0, mantiene 0
-        
+
         return utils.round(((vote - minOriginal) * (maxNew - minNew) / (maxScale - minOriginal)) + minNew);
     },
 
@@ -64,7 +64,7 @@ export const utils = {
         const skillList = getFlatSkillListForPlayer(player);
         const playerVotes = votes.filter(vote => vote.votedPlayerId === playerId);
         const uniqueVotersCount = utils.countVotes(playerId, votes);
-        
+
         if (uniqueVotersCount === 0) {
             // Nessun voto: restituisce tutti 0 o il valore di default
             const defaultAverages = {};
@@ -84,12 +84,12 @@ export const utils = {
         // 1. Calcolo Skill Averages (Media per singola skill)
         const skillSums = {};
         const skillCounts = {};
-        
+
         playerVotes.forEach(vote => {
             Object.entries(vote.skillVotes || {}).forEach(([skill, rating]) => {
                 if (rating && skillList.includes(skill)) {
                     // Rating è già in base 10 (1-10) nel salvataggio, ma se usassimo la scala 1-5, qui andrebbe convertito
-                    const finalRating = rating; 
+                    const finalRating = rating;
                     skillSums[skill] = (skillSums[skill] || 0) + finalRating;
                     skillCounts[skill] = (skillCounts[skill] || 0) + 1;
                 }
@@ -104,7 +104,7 @@ export const utils = {
             const avg = count > 0 ? sum / count : DEFAULT_VOTE_VALUE;
             skillAverages[skill] = utils.round(avg);
         });
-        
+
         // 2. Calcolo Categoria Averages
         const fullSkills = getSkillsForPlayer(player);
         const categoryAverages = {};
@@ -123,14 +123,14 @@ export const utils = {
                     catCount += 1;
                 }
             });
-            
+
             // La media della categoria è la media delle medie delle skill al suo interno
             const catAvg = catCount > 0 ? catSum / catCount : DEFAULT_VOTE_VALUE;
             categoryAverages[category] = utils.round(catAvg);
 
             // Per l'overall generale, usiamo le medie delle 4 macro-categorie
             overallSum += catAvg;
-            overallCount += 1; 
+            overallCount += 1;
         });
 
         // 3. Calcolo Voto Medio Partita (Media dei voti match ricevuti)
@@ -160,7 +160,7 @@ export const utils = {
     calculateOverall: (averages) => {
         return utils.round(averages?.overall || DEFAULT_VOTE_VALUE);
     },
-    
+
     /**
      * Calcola la media per una specifica categoria.
      * @param {string} category - Il nome della categoria (es. 'tecniche').
@@ -199,7 +199,7 @@ export const utils = {
         }
         return parts[0][0].toUpperCase();
     },
-    
+
     /**
      * Rende icona(e) per indicare il ruolo di Portiere.
      * @param {number} count - Quanti voti da portiere (match giocati in porta)
@@ -227,11 +227,11 @@ export const utils = {
         if (!dateString) return 'Data Sconosciuta';
         try {
             const date = new Date(dateString);
-            return new Intl.DateTimeFormat('it-IT', { 
-                weekday: 'short', 
-                day: '2-digit', 
-                month: 'short', 
-                year: 'numeric' 
+            return new Intl.DateTimeFormat('it-IT', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
             }).format(date);
         } catch (e) {
             console.error("Errore formattazione data", e);
@@ -291,7 +291,7 @@ export const utils = {
             return `Scade il ${utils.formatMatchDate(deadlineString)} alle ${time}`;
         }
     },
-    
+
     /**
      * Formatta la data della deadline per l'input (YYYY-MM-DDTHH:MM).
      * @param {string} dateString - Data ISO della deadline.
