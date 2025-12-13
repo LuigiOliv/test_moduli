@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import utils from '../utils.js';
-import { ROLES, SKILLS, shortSKILLS } from '../constants.js';
+import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER } from '../constants.js';
 
 /**
  * Pagina per visualizzare le classifiche (Rating, Skill, Portieri, etc.).
