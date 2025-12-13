@@ -13,7 +13,7 @@ import { ROLES, SKILLS, getSkillsForPlayer } from './constants.js'; // Importa l
 const STATS_ENGINE = (function () {
 
     /**
-     * Calcola il rating di un singolo giocatore in base ai suoi voti.
+     * Calcola il ratingg di un singolo giocatore in base ai suoi voti.
      * @param {Array<object>} playerVotes - Tutti i voti ricevuti dal giocatore.
      * @returns {number} Il Rating calcolato.
      */
