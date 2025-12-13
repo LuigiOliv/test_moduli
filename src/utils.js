@@ -29,7 +29,7 @@ export const utils = {
      */
     countVotes: (playerId, votes) => {
         // Filtra i voti ricevuti dal giocatore
-        const playerVotes = votes.filter(vote => vote.votedPlayerId === playerId);
+        const playerVotes = votes.filter(vote => vote.PlayerId === playerId);
         // Usa un Set per contare gli elettori unici
         const uniqueVoters = new Set(playerVotes.map(vote => vote.voterId));
         return uniqueVoters.size;
@@ -62,7 +62,7 @@ export const utils = {
      */
     calculateAverages: (playerId, votes, player) => {
         const skillList = getFlatSkillListForPlayer(player);
-        const playerVotes = votes.filter(vote => vote.votedPlayerId === playerId);
+        const playerVotes = votes.filter(vote => vote.PlayerId === playerId);
         const uniqueVotersCount = utils.countVotes(playerId, votes);
 
         if (uniqueVotersCount === 0) {

@@ -1,272 +1,464 @@
-import { useState, useEffect, useRef } from 'react';
-import { LoginPage } from './AuthPage.jsx';
+// src/components/App.jsx
+// © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
+
+import { useState, useEffect } from 'react';
+import firebase from '../firebase.js';
 import storage from '../storage.js';
+import { ADMIN_EMAIL } from '../constants.js';
 import Header from './Navigation/Header.jsx';
+import LoginPage from './AuthPage.jsx';
+import ClaimProfileModal from './ClaimProfileModal.jsx';
+import RoleSelectionModal from './RoleSelectionModal.jsx';
+import RoleEditModal from './RoleEditModal.jsx';
+import ProfileSelectorModal from './ProfileSelectorModal.jsx';
 import MatchesPage from './MatchesPage.jsx';
-import ClassifichePage from './ClassifichePage.jsx';
-import PlayerProfile from './PlayerProfile.jsx';
-import { SettingsPage, AdminPage } from './AdminAndSettings.jsx';
 import MatchDetailRouter from './MatchDetailRouter.jsx';
+import PlayersListPage from './PlayersListPage.jsx';
+import PlayerProfile from './PlayerProfile.jsx';
+import ClassifichePage from './ClassifichePage.jsx';
+import AdminPage from './AdminPage.jsx';
+import DebugPage from './DebugPage.jsx';
+import SettingsPage from './SettingsPage.jsx';
+import RatingForm from './RatingForm.jsx';
 
-export default function App() {
-    // ==================== STATE ====================
+function App() {
+    const getPendingEmail = () => sessionStorage.getItem('pendingEmail');
+    const setPendingEmailStorage = (email) => {
+        if (email) {
+            sessionStorage.setItem('pendingEmail', email);
+        } else {
+            sessionStorage.removeItem('pendingEmail');
+        }
+    };
+
     const [currentUser, setCurrentUser] = useState(storage.getCurrentUser());
-    const [currentPage, setCurrentPage] = useState('matches'); // 'matches', 'classifiche', 'profile', 'settings', 'admin'
-    const [selectedMatchId, setSelectedMatchId] = useState(null);
-    const [selectedPlayerId, setSelectedPlayerId] = useState(null);
-
-    // Data State
-    const [matches, setMatches] = useState([]);
+    const [activeTab, setActiveTab] = useState('partite');
+    const [selectedPlayer, setSelectedPlayer] = useState(null);
+    const [viewingProfile, setViewingProfile] = useState(null);
+    const [selectedMatch, setSelectedMatch] = useState(null);
     const [users, setUsers] = useState([]);
     const [votes, setVotes] = useState([]);
+    const [showRoleModal, setShowRoleModal] = useState(false);
+    const [showClaimModal, setShowClaimModal] = useState(false);
+    const [pendingEmail, setPendingEmail] = useState(getPendingEmail());
     const [loading, setLoading] = useState(true);
+    const [showAntonioSelector, setShowAntonioSelector] = useState(false);
+    const [antonioProfiles, setAntonioProfiles] = useState([]);
 
-    // Track if data has been loaded to prevent infinite loops
-    const dataLoadedRef = useRef(false);
-
-    // ==================== EFFECTS ====================
-
-    // Load all data when user logs in
     useEffect(() => {
-        if (currentUser && !dataLoadedRef.current) {
-            dataLoadedRef.current = true;
-            loadAllData();
-        }
-    }, [currentUser]);
+        const unsubscribe = firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+            if (firebaseUser && firebaseUser.email) {
+                setLoading(true);
+                try {
+                    let loadedUsers = await storage.getUsers();
+                    if (loadedUsers.length === 0) { loadedUsers = []; }
 
-    // ==================== DATA LOADING ====================
+                    const email = firebaseUser.email;
+                    const existingUser = loadedUsers.find(u => u.email === email);
 
-    const loadAllData = async () => {
-        setLoading(true);
-        try {
-            // Load data independently to avoid one failure blocking others
-            const matchesData = await storage.getMatches().catch(err => {
-                console.error("Error loading matches:", err);
-                return [];
-            });
+                    if (existingUser) {
+                        const userWithAdmin = { ...existingUser, isAdmin: email === ADMIN_EMAIL };
+                        setCurrentUser(userWithAdmin);
+                        storage.setCurrentUser(userWithAdmin);
 
-            const usersData = await storage.getUsers().catch(err => {
-                console.error("Error loading users:", err);
-                return [];
-            });
+                        const loadedVotes = await storage.getVotes();
+                        setUsers(loadedUsers);
+                        setVotes(loadedVotes);
 
-            const votesData = await storage.getVotes().catch(err => {
-                console.error("Error loading votes:", err);
-                return [];
-            });
+                        if (!existingUser.preferredRole) setShowRoleModal(true);
+                    } else {
+                        setPendingEmail(email);
+                        setShowClaimModal(true);
+                    }
+                } catch (error) {
+                    console.error('Errore caricamento dati DOPO login:', error);
+                    firebase.auth().signOut();
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                setCurrentUser(null);
+                storage.setCurrentUser(null);
+                setLoading(false);
+            }
+        });
 
-            console.log("Data loaded:", {
-                matches: matchesData.length,
-                users: usersData.length,
-                votes: votesData.length
-            });
+        return () => unsubscribe();
+    }, []);
 
-            setMatches(matchesData || []);
-            setUsers(usersData || []);
-            setVotes(votesData || []);
-        } catch (error) {
-            console.error("Error loading data:", error);
-        } finally {
-            setLoading(false);
+    const handleLogin = (email) => {
+        const existingUser = users.find(u => u.email === email);
+        if (existingUser) {
+            const antonioProfiles = users.filter(u => u.email === email);
+            if (antonioProfiles.length > 1) {
+                setAntonioProfiles(antonioProfiles);
+                setShowAntonioSelector(true);
+                return;
+            }
+
+            const userWithAdmin = { ...existingUser, isAdmin: email === ADMIN_EMAIL };
+            setCurrentUser(userWithAdmin);
+            storage.setCurrentUser(userWithAdmin);
+            if (!existingUser.preferredRole) setShowRoleModal(true);
+        } else {
+            setPendingEmail(email);
+            setPendingEmailStorage(email);
+            setShowClaimModal(true);
         }
     };
 
-    // ==================== HANDLERS ====================
+    const handleClaimProfile = async (playerId) => {
+        const isAdmin = pendingEmail === ADMIN_EMAIL;
+        const user = users.find(u => u.id === playerId);
+        const isAntonio = user.name === 'Antonio T';
 
-    const handleLogin = (user) => {
-        setCurrentUser(user);
+        if (isAntonio) {
+            const movementProfile = {
+                ...user,
+                email: pendingEmail,
+                claimed: true,
+                isAdmin,
+                isGoalkeeper: false,
+                name: 'Antonio T - Movimento'
+            };
+
+            const goalkeeperProfile = {
+                id: `${user.id}_gk`,
+                name: 'Antonio T - Portiere',
+                email: pendingEmail,
+                avatar: user.avatar || null,
+                preferredRole: 'Portiere',
+                otherRoles: [],
+                claimed: true,
+                isAdmin,
+                isGoalkeeper: true,
+                isInitialPlayer: false,
+                hasVotedOffline: true
+            };
+
+            await storage.updateUser(movementProfile);
+            await storage.updateUser(goalkeeperProfile);
+
+            const updatedUsers = users.map(u => u.id === playerId ? movementProfile : u).concat([goalkeeperProfile]);
+            setUsers(updatedUsers);
+
+            setAntonioProfiles([movementProfile, goalkeeperProfile]);
+            setShowAntonioSelector(true);
+            setShowClaimModal(false);
+            setPendingEmail(null);
+            setPendingEmailStorage(null);
+        } else {
+            const isGoalkeeper = user.preferredRole === 'Portiere';
+            const claimedUser = { ...user, email: pendingEmail, claimed: true, isAdmin, isGoalkeeper };
+            await storage.updateUser(claimedUser);
+            const updatedUsers = users.map(u => u.id === playerId ? claimedUser : u);
+            setUsers(updatedUsers);
+            setCurrentUser(claimedUser);
+            storage.setCurrentUser(claimedUser);
+            setShowClaimModal(false);
+            setPendingEmail(null);
+            setPendingEmailStorage(null);
+            if (!claimedUser.preferredRole) setShowRoleModal(true);
+        }
     };
 
-    const handleLogout = async () => {
-        await storage.handleLogout();
+    const handleNewPlayer = async (playerName) => {
+        const isAdmin = pendingEmail === ADMIN_EMAIL;
+        const newUser = {
+            id: `player${users.length + 1}`,
+            name: playerName || pendingEmail.split('@')[0],
+            email: pendingEmail,
+            avatar: null,
+            preferredRole: null,
+            otherRoles: [],
+            claimed: true,
+            isAdmin: isAdmin,
+            isInitialPlayer: false,
+            hasVotedOffline: false,
+            isGoalkeeper: false
+        };
+        await storage.updateUser(newUser);
+        setUsers([...users, newUser]);
+        setCurrentUser(newUser);
+        storage.setCurrentUser(newUser);
+        setShowClaimModal(false);
+        setPendingEmail(null);
+        setPendingEmailStorage(null);
+        setShowRoleModal(true);
+    };
+
+    const handleLogout = () => {
+        firebase.auth().signOut();
         setCurrentUser(null);
-        setCurrentPage('matches');
-        setSelectedMatchId(null);
-        setSelectedPlayerId(null);
+        storage.setCurrentUser(null);
     };
 
-    const handleUpdateUser = async (updatedUser) => {
-        await storage.updateUser(updatedUser);
-        setCurrentUser(updatedUser);
-        await loadAllData(); // Refresh to get updated user in users array
-    }; dataLoadedRef.current = false; // Reset the flag for next login
-
-
-    const handleSelectMatch = (matchId) => {
-        setSelectedMatchId(matchId);
-        setCurrentPage('match-detail');
+    const handleVoteSubmit = async (playerId, ratings) => {
+        const newVote = {
+            voterId: currentUser.id,
+            voterName: currentUser.name,
+            voterEmail: currentUser.email,
+            playerId,
+            ratings,
+            timestamp: Date.now(),
+            date: new Date().toISOString()
+        };
+        await storage.addVote(newVote);
+        setVotes([...votes, newVote]);
+        setSelectedPlayer(null);
     };
 
-    const handleViewProfile = (playerId) => {
-        setSelectedPlayerId(playerId);
-        setCurrentPage('player-profile');
+    const handleRolesSave = async (preferredRole, otherRoles) => {
+        const isGoalkeeper = preferredRole === 'Portiere';
+        const updatedCurrentUser = { ...currentUser, preferredRole, otherRoles, isGoalkeeper };
+        await storage.updateUser(updatedCurrentUser);
+        const updatedUsers = users.map(u => u.id === currentUser.id ? updatedCurrentUser : u);
+        setUsers(updatedUsers);
+        setCurrentUser(updatedCurrentUser);
+        storage.setCurrentUser(updatedCurrentUser);
+        setShowRoleModal(false);
     };
 
-    const handleBackToMatches = () => {
-        setSelectedMatchId(null);
-        setCurrentPage('matches');
+    const handleAntonioProfileSelect = (profile) => {
+        setCurrentUser(profile);
+        storage.setCurrentUser(profile);
+        setShowAntonioSelector(false);
+        setAntonioProfiles([]);
     };
-
-    const handleBackToClassifiche = () => {
-        setSelectedPlayerId(null);
-        setCurrentPage('classifiche');
-    };
-
-    // ==================== RENDER ====================
-
-    if (!currentUser) {
-        return <LoginPage onLogin={handleLogin} />;
-    }
 
     if (loading) {
         return (
-            <div className="app-container">
-                <div className="loading-screen">
-                    <h2>⚽ Caricamento...</h2>
+            <div className="login-container">
+                <div className="login-card">
+                    <h1>⚽ Calcetto Rating</h1>
+                    <p>Caricamento in corso...</p>
                 </div>
             </div>
         );
     }
 
-    // Selected match for detail view
-    const selectedMatch = selectedMatchId
-        ? matches.find(m => m.id === selectedMatchId)
-        : null;
+    if (!currentUser) {
+        return (
+            <>
+                {showClaimModal && (
+                    <ClaimProfileModal
+                        users={users}
+                        onClaim={handleClaimProfile}
+                        onNewPlayer={handleNewPlayer}
+                    />
+                )}
+                <LoginPage onLogin={handleLogin} />
+            </>
+        );
+    }
 
-    // Selected player for profile view
-    const selectedPlayer = selectedPlayerId
-        ? users.find(u => u.id === selectedPlayerId)
-        : null;
+    if (currentUser && currentUser.preferredRole) {
+        const isGoalkeeper = currentUser.preferredRole === 'Portiere';
+        const hasIncompleteProfile = !isGoalkeeper &&
+            (!currentUser.otherRoles || currentUser.otherRoles.length < 2);
+
+        if (hasIncompleteProfile) {
+            return (
+                <div className="app-container">
+                    <Header
+                        user={currentUser}
+                        onLogout={handleLogout}
+                        onOpenSettings={() => { }}
+                        setActiveTab={setActiveTab}
+                    />
+                    <div className="modal-overlay" style={{ position: 'fixed' }}>
+                        <div className="modal-content">
+                            <h2>⚠️ Profilo Incompleto</h2>
+                            <p style={{ marginBottom: '20px' }}>
+                                Il tuo profilo necessita di un aggiornamento per continuare.
+                            </p>
+                            <div style={{
+                                background: 'rgba(210, 248, 0, 0.1)',
+                                border: '1px solid rgba(210, 248, 0, 0.3)',
+                                borderRadius: '8px',
+                                padding: '15px',
+                                marginBottom: '20px'
+                            }}>
+                                <p style={{ color: 'var(--volt)', fontWeight: 'bold', marginBottom: '10px' }}>
+                                    📋 Cosa manca:
+                                </p>
+                                <ul style={{
+                                    listStyle: 'none',
+                                    padding: 0,
+                                    color: 'var(--text-muted)'
+                                }}>
+                                    <li style={{ marginBottom: '8px' }}>
+                                        ✅ Ruolo preferito: <strong style={{ color: 'white' }}>{currentUser.preferredRole}</strong>
+                                    </li>
+                                    <li style={{ marginBottom: '8px' }}>
+                                        {currentUser.otherRoles && currentUser.otherRoles.length > 0 ? '⚠️' : '❌'} Altri ruoli:
+                                        <strong style={{ color: currentUser.otherRoles && currentUser.otherRoles.length > 0 ? '#f59e0b' : 'var(--hot-red)' }}>
+                                            {' '}{currentUser.otherRoles ? currentUser.otherRoles.length : 0}/2
+                                        </strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <p style={{ fontSize: '14px', opacity: '0.8', marginBottom: '20px' }}>
+                                Per continuare, devi selezionare almeno <strong>2 ruoli alternativi</strong> oltre al tuo ruolo preferito.
+                            </p>
+                            <button
+                                className="btn btn-primary full-width"
+                                onClick={() => setShowRoleModal(true)}
+                            >
+                                📝 Completa il Profilo
+                            </button>
+                        </div>
+                    </div>
+                    {showRoleModal && (
+                        <RoleEditModal
+                            user={currentUser}
+                            onClose={() => { }}
+                            onSuccess={async () => {
+                                const updatedUser = await storage.getUsers().then(users => users.find(u => u.id === currentUser.id));
+                                setCurrentUser(updatedUser);
+                                storage.setCurrentUser(updatedUser);
+                                setShowRoleModal(false);
+                                window.location.reload();
+                            }}
+                        />
+                    )}
+                </div>
+            );
+        }
+    }
 
     return (
         <div className="app-container">
+            {showRoleModal && <RoleSelectionModal onSave={handleRolesSave} />}
+            {showAntonioSelector && (
+                <ProfileSelectorModal
+                    profiles={antonioProfiles}
+                    onSelect={handleAntonioProfileSelect}
+                />
+            )}
+
             <Header
                 user={currentUser}
                 onLogout={handleLogout}
-                onOpenSettings={() => setCurrentPage('settings')}
+                onOpenSettings={() => setActiveTab('impostazioni')}
+                setActiveTab={setActiveTab}
             />
 
-            {/* Navigation Tabs */}
-            {currentPage !== 'match-detail' && currentPage !== 'player-profile' && (
-                <nav className="nav-tabs">
-                    <button
-                        className={`nav-tab ${currentPage === 'matches' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('matches')}
-                    >
-                        🏟️ Partite
-                    </button>
-                    <button
-                        className={`nav-tab ${currentPage === 'classifiche' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('classifiche')}
-                    >
-                        🏆 Classifiche
-                    </button>
-                    <button
-                        className={`nav-tab ${currentPage === 'profile' ? 'active' : ''}`}
-                        onClick={() => {
-                            setSelectedPlayerId(currentUser.id);
-                            setCurrentPage('profile');
-                        }}
-                    >
-                        👤 Il Mio Profilo
-                    </button>
-                    <button
-                        className={`nav-tab ${currentPage === 'settings' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('settings')}
-                    >
-                        ⚙️ Impostazioni
-                    </button>
-                    {currentUser.isAdmin && (
-                        <button
-                            className={`nav-tab ${currentPage === 'admin' ? 'active' : ''}`}
-                            onClick={() => setCurrentPage('admin')}
-                        >
-                            🔧 Admin
-                        </button>
-                    )}
-                </nav>
-            )
-            }
+            <div className="nav-tabs">
+                <button
+                    className={`nav-tab ${activeTab === 'partite' ? 'active' : ''}`}
+                    onClick={() => {
+                        setActiveTab('partite');
+                        setSelectedPlayer(null);
+                        setViewingProfile(null);
+                        setSelectedMatch(null);
+                    }}
+                >
+                    🏆 Partite
+                </button>
+                <button
+                    className={`nav-tab ${activeTab === 'valuta' ? 'active' : ''}`}
+                    onClick={() => {
+                        setActiveTab('valuta');
+                        setSelectedPlayer(null);
+                        setViewingProfile(null);
+                    }}
+                >
+                    ⚽ Valuta
+                </button>
+                <button
+                    className={`nav-tab ${activeTab === 'profilo' ? 'active' : ''}`}
+                    onClick={() => {
+                        setActiveTab('profilo');
+                        setSelectedPlayer(null);
+                        setViewingProfile(null);
+                    }}
+                >
+                    👤 Profilo
+                </button>
+                <button
+                    className={`nav-tab ${activeTab === 'classifiche' ? 'active' : ''}`}
+                    onClick={() => {
+                        setActiveTab('classifiche');
+                        setSelectedPlayer(null);
+                        setViewingProfile(null);
+                    }}
+                >
+                    📊 Classifiche
+                </button>
+            </div>
 
-            <main className="app-main-content">
-                {/* MATCHES PAGE */}
-                {currentPage === 'matches' && (
-                    <MatchesPage
-                        matches={matches}
-                        currentUser={currentUser}
-                        users={users}
-                        onSelectMatch={handleSelectMatch}
-                        onRefreshData={loadAllData}
+            <div className="content">
+                {viewingProfile ? (
+                    <PlayerProfile
+                        player={users.find(u => u.id === viewingProfile)}
+                        votes={votes}
+                        isOwnProfile={viewingProfile === currentUser.id}
                     />
-                )}
-
-                {/* CLASSIFICHE PAGE */}
-                {currentPage === 'classifiche' && (
+                ) : selectedPlayer ? (
+                    <RatingForm
+                        player={users.find(u => u.id === selectedPlayer)}
+                        onSubmit={handleVoteSubmit}
+                        onCancel={() => setSelectedPlayer(null)}
+                    />
+                ) : activeTab === 'partite' ? (
+                    selectedMatch ? (
+                        <MatchDetailRouter
+                            matchId={selectedMatch}
+                            currentUser={currentUser}
+                            onBack={() => setSelectedMatch(null)}
+                        />
+                    ) : (
+                        <MatchesPage
+                            currentUser={currentUser}
+                            users={users}
+                            onSelectMatch={setSelectedMatch}
+                        />
+                    )
+                ) : activeTab === 'valuta' ? (
+                    <PlayersListPage
+                        users={users}
+                        currentUser={currentUser}
+                        votes={votes}
+                        onSelectPlayer={setSelectedPlayer}
+                    />
+                ) : activeTab === 'profilo' ? (
+                    <PlayerProfile
+                        player={currentUser}
+                        votes={votes}
+                        isOwnProfile={true}
+                    />
+                ) : activeTab === 'classifiche' ? (
                     <ClassifichePage
                         users={users}
                         votes={votes}
                         currentUser={currentUser}
-                        onViewProfile={handleViewProfile}
+                        onViewProfile={setViewingProfile}
                     />
-                )}
-
-                {/* PROFILE PAGE (Own Profile) */}
-                {currentPage === 'profile' && (
-                    <PlayerProfile
-                        player={currentUser}
-                        users={users}
-                        votes={votes}
-                        matches={matches}
-                        isOwnProfile={true}
-                    />
-                )}
-
-                {/* PLAYER PROFILE PAGE (Other Player) */}
-                {currentPage === 'player-profile' && selectedPlayer && (
-                    <PlayerProfile
-                        player={selectedPlayer}
-                        users={users}
-                        votes={votes}
-                        matches={matches}
-                        isOwnProfile={selectedPlayer.id === currentUser.id}
-                        onBack={handleBackToClassifiche}
-                    />
-                )}
-
-                {/* SETTINGS PAGE */}
-                {currentPage === 'settings' && (
-                    <SettingsPage
-                        user={currentUser}
-                        onUpdateUser={handleUpdateUser}
-                    />
-                )}
-
-                {/* ADMIN PAGE */}
-                {currentPage === 'admin' && currentUser.isAdmin && (
+                ) : activeTab === 'admin' && currentUser.isAdmin ? (
                     <AdminPage
                         users={users}
-                        onRefreshData={loadAllData}
-                    />
-                )}
-
-                {/* MATCH DETAIL PAGE */}
-                {currentPage === 'match-detail' && selectedMatch && (
-                    <MatchDetailRouter
-                        match={selectedMatch}
-                        currentUser={currentUser}
-                        users={users}
+                        setUsers={setUsers}
                         votes={votes}
-                        onBack={handleBackToMatches}
-                        onVoteSubmit={loadAllData}
-                        onRegistrationChange={loadAllData}
-                        onMatchUpdate={loadAllData}
+                        setVotes={setVotes}
+                    />
+                ) : activeTab === 'debug' && currentUser.isAdmin ? (
+                    <DebugPage users={users} votes={votes} />
+                ) : (
+                    <SettingsPage
+                        user={currentUser}
+                        onUpdateUser={async (updatedUser) => {
+                            await storage.updateUser(updatedUser);
+                            const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+                            setUsers(updatedUsers);
+                            setCurrentUser(updatedUser);
+                            storage.setCurrentUser(updatedUser);
+                        }}
                     />
                 )}
-            </main>
-
-            <footer className="app-footer">
-                <p>© 2025 Luigi Oliviero | Tutti i diritti riservati</p>
-            </footer>
-        </div >
+            </div>
+        </div>
     );
 }
+
+export default App;
