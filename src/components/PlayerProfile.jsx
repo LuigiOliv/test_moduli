@@ -20,7 +20,6 @@ function PlayerProfile({ player, votes, isOwnProfile, onBack }) {
     const averages = utils.calculateAverages(player.id, votes, player);
     const overall = utils.calculateOverall(averages);
     const [flippedCard, setFlippedCard] = useState(null);
-
     const handleCardClick = (category) => {
         if (window.innerWidth <= 768) {
             setFlippedCard(flippedCard === category ? null : category);

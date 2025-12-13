@@ -167,7 +167,7 @@ export const utils = {
      * @param {object} averages - L'oggetto restituito da calculateAverages.
      * @returns {number} La media della categoria.
      */
-    calculateCategoryOverall: (category, averages) => {
+    calculateCategoryOverall: (averages, category, player) => {
         return utils.round(averages?.categoryAverages?.[category] || DEFAULT_VOTE_VALUE);
     },
 
