@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { auth } from '../firebase.js';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import storage from '../storage.js';
 import { ADMIN_EMAIL } from '../constants.js';
 import Header from './Navigation/Header.jsx';
@@ -41,7 +42,7 @@ function App() {
     const [antonioProfiles, setAntonioProfiles] = useState([]);
 
     useEffect(() => {
-        const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser && firebaseUser.email) {
                 setLoading(true);
                 try {
@@ -67,7 +68,7 @@ function App() {
                     }
                 } catch (error) {
                     console.error('Errore caricamento dati DOPO login:', error);
-                    auth().signOut();
+                    signOut(auth);
                 } finally {
                     setLoading(false);
                 }
