@@ -3,7 +3,6 @@
 
 import { useState, useMemo } from 'react';
 import utils from '../utils.js';
-import STATS_ENGINE from '../StatsEngine.js'; // 🚨 Importa il motore di calcolo
 import { ROLES, SKILLS, shortSKILLS } from '../constants.js';
 
 /**
@@ -18,220 +17,413 @@ function ClassifichePage({ users, votes, currentUser, onViewProfile }) {
     const [selectedSkill, setSelectedSkill] = useState(null);
     const [roleFilter, setRoleFilter] = useState('All');
 
-    // 1. Calcolo Statistiche (Memoizzato per performance)
-    const statsUsers = useMemo(() => {
-        console.log("ClassifichePage - Computing stats for users:", users?.length, "votes:", votes?.length);
-        const result = STATS_ENGINE.getStats(users, votes);
-        console.log("ClassifichePage - Stats computed:", result?.length);
-        return result;
-    }, [users, votes]);
-    
-    // 2. Classifiche filtrate e ordinate
-    const rankedUsers = useMemo(() => {
-        let filteredUsers = statsUsers;
-        
-        // Filtro per Ruolo
-        if (roleFilter !== 'All') {
-            // Se è Portiere, include solo i portieri
-            if (roleFilter === 'Portiere') {
-                filteredUsers = filteredUsers.filter(u => u.role === 'Portiere');
-            } 
-            // Se è Universale, include tutti gli altri (difensori, centrocampisti, attaccanti, universali)
-            else if (roleFilter === 'Campo') {
-                 filteredUsers = filteredUsers.filter(u => u.role !== 'Portiere');
-            }
-        }
-        
-        // Ordinamento
-        switch (activeRank) {
-            case 'rating':
-                // Ordina per Rating e poi per partite giocate
-                return filteredUsers.sort((a, b) => {
-                    if (b.stats.rating !== a.stats.rating) return b.stats.rating - a.stats.rating;
-                    return b.stats.matchesPlayed - a.stats.matchesPlayed;
-                });
-            
-            case 'skill':
-                if (selectedSkill) {
-                    // Ordina per la skill selezionata
-                    return filteredUsers.sort((a, b) => {
-                        const aSkill = a.stats.avgSkills[selectedSkill] || 6.0;
-                        const bSkill = b.stats.avgSkills[selectedSkill] || 6.0;
-                        return bSkill - aSkill;
-                    });
-                }
-                // Se skill non selezionata, ritorna per Rating
-                return filteredUsers.sort((a, b) => b.stats.rating - a.stats.rating);
+    function ClassifichePage({ users, votes, currentUser, onViewProfile }) {
+        const [view, setView] = useState('main'); // 'main' | 'macro-detail' | 'skill-detail'
+        const [selectedMacro, setSelectedMacro] = useState(null);
+        const [selectedSkill, setSelectedSkill] = useState(null);
+        const [showAllOverall, setShowAllOverall] = useState(false);
+        const [showAllMacro, setShowAllMacro] = useState({ tecniche: false, tattiche: false, fisiche: false });
 
-            case 'matchPlayed':
-                return filteredUsers.sort((a, b) => b.stats.matchesPlayed - a.stats.matchesPlayed);
+        // Scroll to top quando cambia la vista
+        useEffect(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, [view, selectedMacro, selectedSkill]);
 
-            case 'winRate':
-                // Ordina per % di vittorie, poi per numero di vittorie
-                return filteredUsers.sort((a, b) => {
-                    if (b.stats.winRate !== a.stats.winRate) return b.stats.winRate - a.stats.winRate;
-                    return b.stats.wins - a.stats.wins;
-                });
-                
-            default:
-                return filteredUsers;
-        }
-    }, [statsUsers, activeRank, selectedSkill, roleFilter]);
+        // Conta i voti fatti dall'utente corrente
+        const userVotesCount = votes.filter(v => v.voterId === currentUser.id).length;
+        const canViewLeaderboard = userVotesCount >= 5;
 
-    // Opzioni di filtro Ruolo
-    const roleOptions = [
-        { id: 'All', label: 'Tutti i Giocatori' },
-        { id: 'Campo', label: 'Giocatori di Campo' },
-        { id: 'Portiere', label: 'Portieri' }
-    ];
+        // Calcola statistiche overall
+        const playersWithOverall = users
+            .filter(u => !u.id.startsWith('seed'))
+            .map(player => {
+                const averages = utils.calculateAverages(player.id, votes, player);
+                const overall = utils.calculateOverall(averages);
+                const voteCount = utils.countVotes(player.id, votes);
+                return { ...player, overall, voteCount, averages };
+            })
+            .filter(p => p.overall !== null && p.voteCount >= 3)
+            .sort((a, b) => b.overall - a.overall);
 
-    // Lista delle Skill rilevanti per il filtro
-    const skillList = useMemo(() => {
-        const allSkills = new Set();
-        // Aggiunge tutte le skill dai ruoli (escludendo la struttura interna)
-        Object.values(SKILLS).forEach(roleSkills => {
-            Object.values(roleSkills).flat().forEach(skill => allSkills.add(skill));
-        });
-        return Array.from(allSkills);
-    }, []);
-    
-    // Funzione per visualizzare la skill
-    const renderSkillSelector = () => {
-        const skillsToShow = skillList.filter(skill => {
-            if (roleFilter === 'Portiere') {
-                return Object.values(SKILLS.Portiere).flat().includes(skill);
-            }
-            if (roleFilter === 'Campo') {
-                // Esclude le skill specifiche del portiere
-                const gkSkills = Object.values(SKILLS.Portiere).flat();
-                return !gkSkills.includes(skill);
-            }
-            return true;
-        });
+        // Funzione per calcolare classifica per macrocategoria
+        const getPlayersForMacro = (macroCategory) => {
+            return users
+                .filter(u => !u.id.startsWith('seed'))
+                .map(player => {
+                    const averages = utils.calculateAverages(player.id, votes, player);
+                    const voteCount = utils.countVotes(player.id, votes);
 
-        return (
-            <select 
-                value={selectedSkill || 'default'}
-                onChange={(e) => setSelectedSkill(e.target.value === 'default' ? null : e.target.value)}
-                className="select-filter"
-            >
-                <option value="default" disabled={selectedSkill !== null}>Scegli Skill</option>
-                {skillsToShow.map(skill => (
-                    <option key={skill} value={skill}>
-                        {shortSKILLS[skill] || skill}
-                    </option>
-                ))}
-            </select>
-        );
-    };
+                    // Controllo null-safety
+                    if (!averages) {
+                        return { ...player, score: null, voteCount };
+                    }
 
-    return (
-        <div className="classifiche-page">
-            <h2>🏆 Classifiche Globali</h2>
-            <p className="subtitle">Visualizza i giocatori con il Rating e le performance migliori.</p>
+                    const skillsForCategory = player.isGoalkeeper
+                        ? SKILLS_GOALKEEPER[macroCategory]
+                        : SKILLS[macroCategory];
 
-            {/* Controlli Filtri */}
-            <div className="rank-controls">
-                {/* 1. Selezione Categoria Rank */}
-                <div className="rank-group">
-                    <label>Rank per:</label>
-                    <button 
-                        className={`button small-button ${activeRank === 'rating' ? 'primary' : 'secondary'}`} 
-                        onClick={() => { setActiveRank('rating'); setSelectedSkill(null); }}
-                    >
-                        Rating
-                    </button>
-                    <button 
-                        className={`button small-button ${activeRank === 'skill' ? 'primary' : 'secondary'}`} 
-                        onClick={() => setActiveRank('skill')}
-                    >
-                        Skill
-                    </button>
-                    <button 
-                        className={`button small-button ${activeRank === 'winRate' ? 'primary' : 'secondary'}`} 
-                        onClick={() => { setActiveRank('winRate'); setSelectedSkill(null); }}
-                    >
-                        % Vittorie
-                    </button>
-                    <button 
-                        className={`button small-button ${activeRank === 'matchPlayed' ? 'primary' : 'secondary'}`} 
-                        onClick={() => { setActiveRank('matchPlayed'); setSelectedSkill(null); }}
-                    >
-                        Presenze
-                    </button>
+                    // Controllo che skillsForCategory esista
+                    if (!skillsForCategory) {
+                        return { ...player, score: null, voteCount };
+                    }
+
+                    const categoryVotes = skillsForCategory.map(skill => averages[skill]).filter(v => v !== undefined);
+                    const categoryAvg = categoryVotes.length > 0
+                        ? categoryVotes.reduce((a, b) => a + b, 0) / categoryVotes.length
+                        : null;
+
+                    return { ...player, score: categoryAvg, voteCount };
+                })
+                .filter(p => p.score !== null && p.voteCount >= 3)
+                .sort((a, b) => b.score - a.score);
+        };
+
+        // Funzione per calcolare classifica per skill specifica
+        const getPlayersForSkill = (skillName) => {
+            return users
+                .filter(u => !u.id.startsWith('seed'))
+                .map(player => {
+                    const averages = utils.calculateAverages(player.id, votes, player);
+                    const voteCount = utils.countVotes(player.id, votes);
+                    const score = averages ? averages[skillName] : undefined;
+
+                    return { ...player, score, voteCount };
+                })
+                .filter(p => p.score !== undefined && p.voteCount >= 3)
+                .sort((a, b) => b.score - a.score);
+        };
+
+        // Handler per apertura dettaglio macro
+        const openMacroDetail = (macro) => {
+            setSelectedMacro(macro);
+            setView('macro-detail');
+        };
+
+        // Handler per apertura dettaglio skill
+        const openSkillDetail = (skill, category) => {
+            setSelectedSkill({ name: skill, category });
+            setView('skill-detail');
+        };
+
+        // Handler per tornare indietro
+        const goBack = () => {
+            setView('main');
+            setSelectedMacro(null);
+            setSelectedSkill(null);
+        };
+
+        // Se non ha votato abbastanza
+        if (!canViewLeaderboard) {
+            return (
+                <div className="section-container">
+                    <div className="section-header">
+                        <h2>📊 Classifiche</h2>
+                    </div>
+
+                    <div className="no-votes">
+                        <h3>🔒 Classifica Bloccata</h3>
+                        <p>Per visualizzare le classifiche devi completare almeno 5 valutazioni</p>
+                        <p style={{ marginTop: '15px', fontSize: '1.2rem', color: 'var(--volt)' }}>
+                            Hai completato: <strong>{userVotesCount}/5</strong> valutazioni
+                        </p>
+                        <p style={{ marginTop: '10px', opacity: '0.8' }}>
+                            Vai alla sezione "Valuta" per votare altri giocatori!
+                        </p>
+                    </div>
                 </div>
+            );
+        }
 
-                {/* 2. Selezione Skill (solo se activeRank è 'skill') */}
-                {activeRank === 'skill' && renderSkillSelector()}
-                
-                {/* 3. Filtro per Ruolo */}
-                <div className="rank-group">
-                    <label>Filtra Ruolo:</label>
-                    {roleOptions.map(opt => (
-                        <button 
-                            key={opt.id}
-                            className={`button small-button ${roleFilter === opt.id ? 'primary' : 'secondary'}`} 
-                            onClick={() => setRoleFilter(opt.id)}
-                        >
-                            {opt.label.split(' ')[0]}
-                        </button>
-                    ))}
+        // Se non ci sono dati
+        if (playersWithOverall.length === 0) {
+            return (
+                <div className="section-container">
+                    <div className="section-header">
+                        <h2>📊 Classifiche</h2>
+                    </div>
+                    <div className="no-votes">
+                        <h3>Nessuna classifica disponibile</h3>
+                        <p>I giocatori devono ricevere almeno 5 valutazioni per apparire</p>
+                    </div>
                 </div>
-            </div>
-            
-            <div className="ranking-table-container">
-                <table className="ranking-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Giocatore</th>
-                            <th>Ruolo</th>
-                            <th>
-                                {activeRank === 'rating' ? 'Rating' : 
-                                 activeRank === 'winRate' ? 'Vittorie' : 
-                                 activeRank === 'matchPlayed' ? 'Partite Giocate' :
-                                 activeRank === 'skill' ? shortSKILLS[selectedSkill] || 'Media Skill' : 'Valore'}
-                            </th>
-                            <th>Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rankedUsers.map((user, index) => (
-                            <tr key={user.id} className={user.id === currentUser.id ? 'current-user-row' : ''}>
-                                <td className="rank-cell">
-                                    <span className="rank-number">#{index + 1}</span>
-                                </td>
-                                <td className="player-cell">
-                                    {user.nickname || user.displayName}
-                                </td>
-                                <td className="role-cell">{user.role || 'N/D'}</td>
-                                <td className="value-cell">
-                                    {activeRank === 'rating' ? user.stats.rating.toFixed(2) : 
-                                     activeRank === 'winRate' ? `${user.stats.winRate.toFixed(1)}% (${user.stats.wins}V/${user.stats.losses}S)` : 
-                                     activeRank === 'matchPlayed' ? user.stats.matchesPlayed :
-                                     activeRank === 'skill' ? (user.stats.avgSkills[selectedSkill] || 6.0).toFixed(2) : user.stats.rating.toFixed(2)}
-                                </td>
-                                <td className="action-cell">
-                                    <button 
-                                        className="button tiny-button secondary"
-                                        onClick={() => onViewProfile(user.id)}
-                                    >
-                                        Vedi Profilo
-                                    </button>
-                                </td>
-                            </tr>
+            );
+        }
+
+        // ==================== VISTA DETTAGLIO MACROCATEGORIA ====================
+        if (view === 'macro-detail' && selectedMacro) {
+            const playersForMacro = getPlayersForMacro(selectedMacro);
+            const macroInfo = {
+                tecniche: { emoji: '🎯', title: 'Abilità Tecniche', color: '#FF2E63' },
+                tattiche: { emoji: '🧠', title: 'Abilità Tattiche', color: '#00F0FF' },
+                fisiche: { emoji: '💪', title: 'Abilità Fisiche', color: '#D2F800' }
+            };
+            const info = macroInfo[selectedMacro];
+
+            return (
+                <div className="section-container">
+                    <div className="section-header">
+                        <h2>{info.emoji} {info.title}</h2>
+                        <button className="btn-back" onClick={goBack}>← Indietro</button>
+                    </div>
+
+                    <div className="leaderboard-container">
+                        {playersForMacro.map((player, index) => (
+                            <div
+                                key={player.id}
+                                className={`leaderboard-item ${index < 3 ? `rank-${index + 1}` : ''}`}
+                                onClick={() => onViewProfile(player.id)}
+                            >
+                                <div className="rank-number">
+                                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                </div>
+                                <div className="avatar">
+                                    {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: '600', fontSize: '18px' }}>{player.name} {player.isGoalkeeper && '🧤'}</div>
+                                    <div style={{ fontSize: '13px', opacity: 0.8 }}>{player.voteCount} valutazioni</div>
+                                </div>
+                                <div style={{ fontWeight: '800', fontSize: '28px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                            </div>
                         ))}
-                    </tbody>
-                </table>
-            </div>
-
-            {rankedUsers.length === 0 && (
-                <div className="info-card empty-state">
-                    Nessun giocatore trovato con questi criteri.
+                    </div>
                 </div>
-            )}
-        </div>
-    );
-}
+            );
+        }
 
-export default ClassifichePage;
+        // ==================== VISTA DETTAGLIO SKILL ====================
+        if (view === 'skill-detail' && selectedSkill) {
+            const playersForSkill = getPlayersForSkill(selectedSkill.name);
+            const skillEmojis = {
+                'Tiro': '⚡', 'Passaggio corto': '📨', 'Passaggio lungo': '📡', 'Contrasto': '🛡️', 'Controllo': '⚽',
+                'Visione di gioco': '👁️', 'Senso della posizione': '📍', 'Spirito di sacrificio': '💪',
+                'Letture difensive': '🛡️', 'Costruzione': '🏗️',
+                'Resistenza': '🏃', 'Scatto': '⚡', 'Progressione': '🚀', 'Presenza fisica': '🦁', 'Cazzimma': '🔥'
+            };
+            const emoji = skillEmojis[selectedSkill.name] || '⭐';
+
+            return (
+                <div className="section-container">
+                    <div className="section-header">
+                        <h2>{emoji} {selectedSkill.name}</h2>
+                        <button className="btn-back" onClick={goBack}>← Indietro</button>
+                    </div>
+
+                    <div className="leaderboard-container">
+                        {playersForSkill.map((player, index) => (
+                            <div
+                                key={player.id}
+                                className={`leaderboard-item ${index < 3 ? `rank-${index + 1}` : ''}`}
+                                onClick={() => onViewProfile(player.id)}
+                            >
+                                <div className="rank-number">
+                                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                </div>
+                                <div className="avatar">
+                                    {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: '600', fontSize: '18px' }}>{player.name} {player.isGoalkeeper && '🧤'}</div>
+                                    <div style={{ fontSize: '13px', opacity: 0.8 }}>{player.voteCount} valutazioni</div>
+                                </div>
+                                <div style={{ fontWeight: '800', fontSize: '28px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== VISTA PRINCIPALE ====================
+        return (
+            <div className="section-container">
+                <div className="section-header">
+                    <h2>📊 Classifiche Complete</h2>
+                </div>
+
+                {/* 1️⃣ CLASSIFICA OVERALL */}
+                <div className="rankings-overall-section">
+                    <h3 className="rankings-section-title">🏆 Classifica Generale</h3>
+
+                    <div className="leaderboard-container">
+                        {playersWithOverall.slice(0, showAllOverall ? undefined : 5).map((player, index) => (
+                            <div
+                                key={player.id}
+                                className={`leaderboard-item ${index < 3 ? `rank-${index + 1}` : ''}`}
+                                onClick={() => onViewProfile(player.id)}
+                            >
+                                <div className="rank-number">
+                                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                </div>
+                                <div className="avatar">
+                                    {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: '600', fontSize: '18px' }}>{player.name} {player.isGoalkeeper && '🧤'}</div>
+                                    <div style={{ fontSize: '13px', opacity: 0.8 }}>{player.voteCount} valutazioni</div>
+                                </div>
+                                <div style={{ fontWeight: '800', fontSize: '28px' }}>{utils.toBase10(player.overall).toFixed(2)}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {playersWithOverall.length > 5 && (
+                        <button
+                            className="btn-expand"
+                            onClick={() => setShowAllOverall(!showAllOverall)}
+                        >
+                            {showAllOverall ? '⬆️ Mostra meno' : `⬇️ Mostra altri ${playersWithOverall.length - 5}`}
+                        </button>
+                    )}
+                </div>
+
+                {/* 2️⃣ MACROCATEGORIE */}
+                <h3 className="rankings-section-title" style={{ marginTop: '40px' }}>📈 Classifiche per Macrocategoria</h3>
+
+                <div className="rankings-macro-grid">
+                    {/* TECNICA */}
+                    <div className="rankings-macro-card rankings-macro-tecnica" onClick={() => openMacroDetail('tecniche')}>
+                        <div className="rankings-macro-header">
+                            <span className="rankings-macro-emoji">🎯</span>
+                            <span className="rankings-macro-title">Tecnica</span>
+                        </div>
+
+                        <div className="rankings-compact-list">
+                            {getPlayersForMacro('tecniche').slice(0, showAllMacro.tecniche ? undefined : 3).map((player, index) => (
+                                <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
+                                    <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
+                                    <div className="avatar-small">
+                                        {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: '600', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {player.name} {player.isGoalkeeper && '🧤'}
+                                        </div>
+                                    </div>
+                                    <div style={{ fontWeight: '800', fontSize: '20px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {getPlayersForMacro('tecniche').length > 3 && (
+                            <button
+                                className="btn-expand-small"
+                                onClick={(e) => { e.stopPropagation(); setShowAllMacro({ ...showAllMacro, tecniche: !showAllMacro.tecniche }); }}
+                            >
+                                {showAllMacro.tecniche ? '⬆️ Mostra meno' : `⬇️ Mostra tutti (${getPlayersForMacro('tecniche').length})`}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* TATTICA */}
+                    <div className="rankings-macro-card rankings-macro-tattica" onClick={() => openMacroDetail('tattiche')}>
+                        <div className="rankings-macro-header">
+                            <span className="rankings-macro-emoji">🧠</span>
+                            <span className="rankings-macro-title">Tattica</span>
+                        </div>
+
+                        <div className="rankings-compact-list">
+                            {getPlayersForMacro('tattiche').slice(0, showAllMacro.tattiche ? undefined : 3).map((player, index) => (
+                                <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
+                                    <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
+                                    <div className="avatar-small">
+                                        {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: '600', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {player.name} {player.isGoalkeeper && '🧤'}
+                                        </div>
+                                    </div>
+                                    <div style={{ fontWeight: '800', fontSize: '20px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {getPlayersForMacro('tattiche').length > 3 && (
+                            <button
+                                className="btn-expand-small"
+                                onClick={(e) => { e.stopPropagation(); setShowAllMacro({ ...showAllMacro, tattiche: !showAllMacro.tattiche }); }}
+                            >
+                                {showAllMacro.tattiche ? '⬆️ Mostra meno' : `⬇️ Mostra tutti (${getPlayersForMacro('tattiche').length})`}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* FISICA */}
+                    <div className="rankings-macro-card rankings-macro-fisica" onClick={() => openMacroDetail('fisiche')}>
+                        <div className="rankings-macro-header">
+                            <span className="rankings-macro-emoji">💪</span>
+                            <span className="rankings-macro-title">Fisica</span>
+                        </div>
+
+                        <div className="rankings-compact-list">
+                            {getPlayersForMacro('fisiche').slice(0, showAllMacro.fisiche ? undefined : 3).map((player, index) => (
+                                <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
+                                    <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
+                                    <div className="avatar-small">
+                                        {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: '600', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {player.name} {player.isGoalkeeper && '🧤'}
+                                        </div>
+                                    </div>
+                                    <div style={{ fontWeight: '800', fontSize: '20px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {getPlayersForMacro('fisiche').length > 3 && (
+                            <button
+                                className="btn-expand-small"
+                                onClick={(e) => { e.stopPropagation(); setShowAllMacro({ ...showAllMacro, fisiche: !showAllMacro.fisiche }); }}
+                            >
+                                {showAllMacro.fisiche ? '⬆️ Mostra meno' : `⬇️ Mostra tutti (${getPlayersForMacro('fisiche').length})`}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* 3️⃣ SKILL INDIVIDUALI */}
+                <h3 className="rankings-section-title" style={{ marginTop: '40px' }}>⚡ Top 3 per ogni Skill</h3>
+
+                <div className="rankings-skills-grid">
+                    {Object.keys(SKILLS).flatMap(category =>
+                        SKILLS[category].map((skill, idx) => {
+                            const playersForSkill = getPlayersForSkill(skill);
+                            const skillEmojis = {
+                                'Tiro': '⚡', 'Passaggio corto': '📨', 'Passaggio lungo': '📡', 'Contrasto': '🛡️', 'Controllo': '⚽',
+                                'Visione di gioco': '👁️', 'Senso della posizione': '📍', 'Spirito di sacrificio': '💪',
+                                'Letture difensive': '🛡️', 'Costruzione': '🗝️',
+                                'Resistenza': '🏃', 'Scatto': '⚡', 'Progressione': '🚀', 'Presenza fisica': '🦁', 'Cazzimma': '🔥'
+                            };
+                            const emoji = skillEmojis[skill] || '⭐';
+
+                            return (
+                                <div key={skill} className="rankings-skill-card" onClick={() => openSkillDetail(skill, category)}>
+                                    <div className="rankings-skill-title">{emoji} {skill}</div>
+
+                                    <div className="rankings-mini-list">
+                                        {playersForSkill.slice(0, 3).map((player, index) => (
+                                            <div key={player.id} className="rankings-mini-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
+                                                <div className="rank-mini">{index + 1}</div>
+                                                <div className="avatar-mini">
+                                                    {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0, fontSize: '14px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {player.name}
+                                                </div>
+                                                <div style={{ fontWeight: '800', fontSize: '16px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    export default ClassifichePage;
