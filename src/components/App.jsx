@@ -6,7 +6,7 @@ import { auth } from '../firebase.js';
 import storage from '../storage.js';
 import { ADMIN_EMAIL } from '../constants.js';
 import Header from './Navigation/Header.jsx';
-import LoginPage from './AuthPage.jsx';
+import { LoginPage } from './AuthPage.jsx';
 import { ClaimProfileModal, RoleSelectionModal, RoleEditModal, ProfileSelectorModal } from './Modals.jsx';
 import MatchesPage from './MatchesPage.jsx';
 import MatchDetailRouter from './MatchDetailRouter.jsx';
