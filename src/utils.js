@@ -1,7 +1,7 @@
 // src/utils.js
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import { getSkillsForPlayer, getShortSkillsForPlayer, DEFAULT_VOTE_VALU, getFlatSkillListForPlayer } from './constants.js';
+import { getSkillsForPlayer, getShortSkillsForPlayer, DEFAULT_VOTE_VALUE, getFlatSkillListForPlayer } from './constants.js';
 
 // =========================================================================
 // FUNZIONI DI CALCOLO E RATING
