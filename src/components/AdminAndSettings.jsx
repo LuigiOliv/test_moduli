@@ -5,8 +5,7 @@ import { useState, useEffect } from 'react';
 import storage from '../storage.js';
 import utils from '../utils.js';
 import { ROLES, SKILLS, getSkillsForPlayer } from '../constants.js';
-
-const db = firebase.firestore();
+import { db } from '../firebase.js';
 
 // =========================================================================
 // 1. SETTINGS PAGE (Impostazioni Utente)
