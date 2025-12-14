@@ -29,7 +29,7 @@ export const utils = {
      */
     countVotes: (playerId, votes) => {
         // Filtra i voti ricevuti dal giocatore
-        const playerVotes = votes.filter(vote => vote.PlayerId === playerId);
+        const playerVotes = votes.filter(vote => vote.playerId === playerId);
         // Usa un Set per contare gli elettori unici
         const uniqueVoters = new Set(playerVotes.map(vote => vote.voterId));
         return uniqueVoters.size;
@@ -62,7 +62,7 @@ export const utils = {
      */
     calculateAverages: (playerId, votes, player) => {
         const skillList = getFlatSkillListForPlayer(player);
-        const playerVotes = votes.filter(vote => vote.PlayerId === playerId);
+        const playerVotes = votes.filter(vote => vote.playerId === playerId);
         const uniqueVotersCount = utils.countVotes(playerId, votes);
 
         if (uniqueVotersCount === 0) {
@@ -86,7 +86,7 @@ export const utils = {
         const skillCounts = {};
 
         playerVotes.forEach(vote => {
-            Object.entries(vote.skillVotes || {}).forEach(([skill, rating]) => {
+            Object.entries(vote.ratings || {}).forEach(([skill, rating]) => {
                 if (rating && skillList.includes(skill)) {
                     // Rating è già in base 10 (1-10) nel salvataggio, ma se usassimo la scala 1-5, qui andrebbe convertito
                     const finalRating = rating;
