@@ -3,7 +3,7 @@
 
 import utils from '../utils.js';
 
-function PlayersListPage({ users, currentUser, votes, onSelectPlayer }) {
+function PlayersListPage({ users = [], currentUser, votes = [], onSelectPlayer }) {
     const hasVoted = (playerId) => {
         return votes.some(v => v.voterId === currentUser.id && v.playerId === playerId);
     };

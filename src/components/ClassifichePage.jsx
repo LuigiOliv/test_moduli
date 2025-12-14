@@ -13,7 +13,7 @@ import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER } from '../constants.js';
  * @param {function} onViewProfile - Callback per aprire il profilo di un giocatore.
  */
 
-function ClassifichePage({ users, votes, currentUser, onViewProfile }) {
+function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile }) {
     const [view, setView] = useState('main'); // 'main' | 'macro-detail' | 'skill-detail'
     const [selectedMacro, setSelectedMacro] = useState(null);
     const [selectedSkill, setSelectedSkill] = useState(null);

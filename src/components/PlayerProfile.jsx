@@ -13,8 +13,8 @@ import RadarChart from './RadarChart.jsx';
  * @param {boolean} isOwnProfile - True se è il profilo dell'utente loggato.
  * @param {function} onBack - Callback per tornare indietro (se non è il proprio profilo).
  */
-function PlayerProfile({ player, votes, isOwnProfile, onBack }) {
-    const playerVotes = votes.filter(v => v.PlayerId === player.id);
+function PlayerProfile({ player, votes = [], isOwnProfile, onBack }) {
+    const playerVotes = votes.filter(v => v.playerId === player.id);
     const voteCount = utils.countVotes(player.id, votes);
     const hasEnoughVotes = voteCount >= 5;
     const averages = utils.calculateAverages(player.id, votes, player);
