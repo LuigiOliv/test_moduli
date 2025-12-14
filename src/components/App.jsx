@@ -386,72 +386,75 @@ function App() {
 
             <div className="content">
                 {viewingProfile ? (
-                    <PlayerProfile
-                        player={users.find(u => u.id === viewingProfile)}
-                        votes={votes}
-                        isOwnProfile={viewingProfile === currentUser.id}
-                    />
+                    users.find(u => u.id === viewingProfile) ? (
+                        <PlayerProfile
+                            player={users.find(u => u.id === viewingProfile)}
+                            votes={votes}
+                            isOwnProfile={viewingProfile === currentUser.id}
+                        />
+                    ) : null
                 ) : selectedPlayer ? (
-                    <RatingForm
-                        player={users.find(u => u.id === selectedPlayer)}
-                        onSubmit={handleVoteSubmit}
-                        onCancel={() => setSelectedPlayer(null)}
-                    />
-                ) : activeTab === 'partite' ? (
-                    selectedMatch ? (
-                        <MatchDetailRouter
-                            matchId={selectedMatch}
-                            currentUser={currentUser}
-                            onBack={() => setSelectedMatch(null)}
+                    users.find(u => u.id === selectedPlayer) ? (
+                        <RatingForm
+                            player={users.find(u => u.id === selectedPlayer)}
+                            onSubmit={handleVoteSubmit}
+                            onCancel={() => setSelectedPlayer(null)}
                         />
-                    ) : (
-                        <MatchesPage
-                            currentUser={currentUser}
+                    ) : activeTab === 'partite' ? (
+                        selectedMatch ? (
+                            <MatchDetailRouter
+                                matchId={selectedMatch}
+                                currentUser={currentUser}
+                                onBack={() => setSelectedMatch(null)}
+                            />
+                        ) : (
+                            <MatchesPage
+                                currentUser={currentUser}
+                                users={users}
+                                onSelectMatch={setSelectedMatch}
+                            />
+                        )
+                    ) : activeTab === 'valuta' ? (
+                        <PlayersListPage
                             users={users}
-                            onSelectMatch={setSelectedMatch}
+                            currentUser={currentUser}
+                            votes={votes}
+                            onSelectPlayer={setSelectedPlayer}
                         />
-                    )
-                ) : activeTab === 'valuta' ? (
-                    <PlayersListPage
-                        users={users}
-                        currentUser={currentUser}
-                        votes={votes}
-                        onSelectPlayer={setSelectedPlayer}
-                    />
-                ) : activeTab === 'profilo' ? (
-                    <PlayerProfile
-                        player={currentUser}
-                        votes={votes}
-                        isOwnProfile={true}
-                    />
-                ) : activeTab === 'classifiche' ? (
-                    <ClassifichePage
-                        users={users}
-                        votes={votes}
-                        currentUser={currentUser}
-                        onViewProfile={setViewingProfile}
-                    />
-                ) : activeTab === 'admin' && currentUser.isAdmin ? (
-                    <AdminPage
-                        users={users}
-                        setUsers={setUsers}
-                        votes={votes}
-                        setVotes={setVotes}
-                    />
-                ) : activeTab === 'debug' && currentUser.isAdmin ? (
-                    <DebugPage users={users} votes={votes} />
-                ) : (
-                    <SettingsPage
-                        user={currentUser}
-                        onUpdateUser={async (updatedUser) => {
-                            await storage.updateUser(updatedUser);
-                            const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-                            setUsers(updatedUsers);
-                            setCurrentUser(updatedUser);
-                            storage.setCurrentUser(updatedUser);
-                        }}
-                    />
-                )}
+                    ) : activeTab === 'profilo' ? (
+                        <PlayerProfile
+                            player={currentUser}
+                            votes={votes}
+                            isOwnProfile={true}
+                        />
+                    ) : activeTab === 'classifiche' ? (
+                        <ClassifichePage
+                            users={users}
+                            votes={votes}
+                            currentUser={currentUser}
+                            onViewProfile={setViewingProfile}
+                        />
+                    ) : activeTab === 'admin' && currentUser.isAdmin ? (
+                        <AdminPage
+                            users={users}
+                            setUsers={setUsers}
+                            votes={votes}
+                            setVotes={setVotes}
+                        />
+                    ) : activeTab === 'debug' && currentUser.isAdmin ? (
+                        <DebugPage users={users} votes={votes} />
+                    ) : (
+                        <SettingsPage
+                            user={currentUser}
+                            onUpdateUser={async (updatedUser) => {
+                                await storage.updateUser(updatedUser);
+                                const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+                                setUsers(updatedUsers);
+                                setCurrentUser(updatedUser);
+                                storage.setCurrentUser(updatedUser);
+                            }}
+                        />
+                    )}
             </div>
         </div>
     );
