@@ -2,6 +2,20 @@
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
 import { db } from './firebase.js';
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    setDoc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    query,
+    orderBy,
+    limit,
+    writeBatch
+} from 'firebase/firestore';
 
 const storage = {
     getUsers: async () => {
