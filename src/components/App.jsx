@@ -400,61 +400,62 @@ function App() {
                             onSubmit={handleVoteSubmit}
                             onCancel={() => setSelectedPlayer(null)}
                         />
-                    ) : activeTab === 'partite' ? (
-                        selectedMatch ? (
-                            <MatchDetailRouter
-                                matchId={selectedMatch}
-                                currentUser={currentUser}
-                                onBack={() => setSelectedMatch(null)}
-                            />
-                        ) : (
-                            <MatchesPage
-                                currentUser={currentUser}
-                                users={users}
-                                onSelectMatch={setSelectedMatch}
-                            />
-                        )
-                    ) : activeTab === 'valuta' ? (
-                        <PlayersListPage
-                            users={users}
+                    ) : null
+                ) : activeTab === 'partite' ? (
+                    selectedMatch ? (
+                        <MatchDetailRouter
+                            matchId={selectedMatch}
                             currentUser={currentUser}
-                            votes={votes}
-                            onSelectPlayer={setSelectedPlayer}
+                            onBack={() => setSelectedMatch(null)}
                         />
-                    ) : activeTab === 'profilo' ? (
-                        <PlayerProfile
-                            player={currentUser}
-                            votes={votes}
-                            isOwnProfile={true}
-                        />
-                    ) : activeTab === 'classifiche' ? (
-                        <ClassifichePage
-                            users={users}
-                            votes={votes}
-                            currentUser={currentUser}
-                            onViewProfile={setViewingProfile}
-                        />
-                    ) : activeTab === 'admin' && currentUser.isAdmin ? (
-                        <AdminPage
-                            users={users}
-                            setUsers={setUsers}
-                            votes={votes}
-                            setVotes={setVotes}
-                        />
-                    ) : activeTab === 'debug' && currentUser.isAdmin ? (
-                        <DebugPage users={users} votes={votes} />
                     ) : (
-                        <SettingsPage
-                            user={currentUser}
-                            onUpdateUser={async (updatedUser) => {
-                                await storage.updateUser(updatedUser);
-                                const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-                                setUsers(updatedUsers);
-                                setCurrentUser(updatedUser);
-                                storage.setCurrentUser(updatedUser);
-                            }}
+                        <MatchesPage
+                            currentUser={currentUser}
+                            users={users}
+                            onSelectMatch={setSelectedMatch}
                         />
-                    )}
+                    )
+                ) : activeTab === 'valuta' ? (
+                    <PlayersListPage
+                        users={users}
+                        currentUser={currentUser}
+                        votes={votes}
+                        onSelectPlayer={setSelectedPlayer}
+                    />
+                ) : activeTab === 'profilo' ? (
+                    <PlayerProfile
+                        player={currentUser}
+                        votes={votes}
+                        isOwnProfile={true}
+                    />
+                ) : activeTab === 'classifiche' ? (
+                    <ClassifichePage
+                        users={users}
+                        votes={votes}
+                        currentUser={currentUser}
+                        onViewProfile={setViewingProfile}
+                    />
+                ) : activeTab === 'admin' && currentUser.isAdmin ? (
+                    <AdminPage
+                        users={users}
+                        setUsers={setUsers}
+                        votes={votes}
+                        setVotes={setVotes}
+                    />
+                ) : activeTab === 'debug' && currentUser.isAdmin ? (
+                    <DebugPage users={users} votes={votes} />
+                ) : (
+                    <SettingsPage
+                        user={currentUser}
+                        onUpdateUser={async (updatedUser) => {
+                            await storage.updateUser(updatedUser);
+                            const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
+                            setUsers(updatedUsers);
+                            setCurrentUser(updatedUser);
+                            storage.setCurrentUser(updatedUser);
+                        }}
+                    />
+                )}
             </div>
         </div>
     );
