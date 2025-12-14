@@ -44,6 +44,7 @@ const utils = {
     },
 
     getInitials: (name) => {
+        if (!name) return '??';
         return name.substring(0, 2).toUpperCase();
     },
 
