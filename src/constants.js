@@ -10,59 +10,40 @@ export const DEFAULT_VOTE_VALUE = 6.0;
 
 export const SKILLS = {
     // Abilità Tecniche
-    tecniche: [
-        'Tiro', 'Passaggio corto', 'Passaggio lungo', 'Contrasto', 'Controllo'
-    ],
+    tecniche: ['Tiro', 'Passaggio corto', 'Passaggio lungo', 'Contrasto', 'Controllo'],
     // Abilità Tattiche
-    tattiche: [
-        'Posizionamento', 'Visione di gioco', 'Movimento senza palla', 'Decision Making'
-    ],
-    // Abilità Fisiche e Mentali
-    fisiche: [
-        'Resistenza (Stamina)', 'Velocità (Scatto)', 'Forza fisica (Tackle/Spalla)', 'Reattività'
-    ],
-    mentali: [
-        'Leadership', 'Concentrazione', 'Mentalità', 'Fair Play'
-    ]
+    tattiche: ['Visione di gioco', 'Senso della posizione', 'Spirito di sacrificio', 'Letture difensive', 'Costruzione'],
+    // Abilità Fisiche
+    fisiche: ['Resistenza', 'Scatto', 'Progressione', 'Presenza fisica', 'Cazzimma']
 };
 
 export const SKILLS_GOALKEEPER = {
     // Abilità Tecniche (Portiere)
-    tecniche: [
-        'Parate', 'Uscite', 'Rinvii (piedi)', 'Rilanci (mani)', 'Controllo palla'
-    ],
+    tecniche: ['Parate', 'Uscite', 'Rinvii (piedi)', 'Rilanci (mani)', 'Controllo palla'],
     // Abilità Tattiche (Portiere)
-    tattiche: [
-        'Posizionamento in porta', 'Comunicazione', 'Copertura Spazi', 'Gestione retropassaggio'
-    ],
-    // Abilità Fisiche e Mentali (Portiere)
-    fisiche: [
-        'Reattività', 'Elevazione (Jump)', 'Agilità', 'Coordinazione'
-    ],
-    mentali: [
-        'Leadership', 'Concentrazione', 'Mentalità', 'Presenza'
-    ]
+    tattiche: ['Posizionamento', 'Comunicazione', 'Lettura del gioco', 'Gestione area', 'Prima costruzione'],
+    // Abilità Fisiche (Portiere)
+    fisiche: ['Reattività/Agilità', 'Riflessi', 'Elevazione', 'Resistenza', 'Plasticità (tuffi)']
 };
 
 export const shortSKILLS = {
     // Mappatura breve per le skill di campo
-    Tiro: 'Tir', 'Passaggio corto': 'PC', 'Passaggio lungo': 'PL', Contrasto: 'Ctr', Controllo: 'Cnr',
-    Posizionamento: 'Pos', 'Visione di gioco': 'Vis', 'Movimento senza palla': 'MvP', 'Decision Making': 'Dec',
-    'Resistenza (Stamina)': 'Stm', 'Velocità (Scatto)': 'Vel', 'Forza fisica (Tackle/Spalla)': 'For', Reattività: 'Rea',
-    Leadership: 'Ldr', Concentrazione: 'Con', Mentalità: 'Mnt', 'Fair Play': 'FPl'
+    tecniche: ['TIR', 'PsC', 'PsL', 'CST', 'CTR'],
+    tattiche: ['VIS', 'PSZ', 'SAC', 'DIF', 'REG'],
+    fisiche: ['RES', 'SCT', 'PRG', 'FIS', 'CZM']
 };
 
 export const shortSKILLS_GK = {
     // Mappatura breve per le skill del portiere
-    Parate: 'Par', Uscite: 'Usc', 'Rinvii (piedi)': 'RnP', 'Rilanci (mani)': 'RnM', 'Controllo palla': 'CPl',
-    'Posizionamento in porta': 'PPt', Comunicazione: 'Com', 'Copertura Spazi': 'CSz', 'Gestione retropassaggio': 'GRp',
-    Reattività: 'Rea', 'Elevazione (Jump)': 'Jmp', Agilità: 'Agl', Coordinazione: 'Crd',
-    Leadership: 'Ldr', Concentrazione: 'Con', Mentalità: 'Mnt', Presenza: 'Prs'
+    tecniche: ['PRT', 'USC', 'RNV', 'RLC', 'CTR'],
+    tattiche: ['PSZ', 'CMZ', 'LET', 'GES', 'REG'],
+    fisiche: ['AGL', 'RFL', 'ELV', 'RES', 'TUF']
 };
 
-export const ROLES = [
-    'Universale', 'Difensore', 'Centrocampista', 'Attaccante', 'Portiere'
-];
+export const ROLES = {
+    'Portiere', 'Difensore centrale', 'Difensore laterale sx', 'Difensore laterale dx',
+    'Centrocampista difensivo', 'Centrocampista offensivo', 'Mezzala sx', 'Mezzala dx', 'Centravanti'
+};
 
 // =========================================================================
 // FUNZIONI HELPER
@@ -84,19 +65,4 @@ export const getSkillsForPlayer = (player) => {
  */
 export const getShortSkillsForPlayer = (player) => {
     return player.isGoalkeeper ? shortSKILLS_GK : shortSKILLS;
-};
-
-/**
- * Restituisce un elenco piatto di tutte le skill per il giocatore.
- * @param {object} player - L'oggetto giocatore.
- * @returns {string[]} Array di nomi delle skill.
- */
-export const getFlatSkillListForPlayer = (player) => {
-    const skillSet = getSkillsForPlayer(player);
-    return [
-        ...skillSet.tecniche,
-        ...skillSet.tattiche,
-        ...skillSet.fisiche,
-        ...skillSet.mentali
-    ];
 };
