@@ -46,8 +46,14 @@ function App() {
             if (firebaseUser && firebaseUser.email) {
                 setLoading(true);
                 try {
+                    // 🔧 FIX: Gestisci caso undefined
                     let loadedUsers = await storage.getUsers();
-                    if (loadedUsers.length === 0) { loadedUsers = []; }
+
+                    // 🛡️ SAFETY CHECK
+                    if (!loadedUsers || !Array.isArray(loadedUsers)) {
+                        console.error('❌ storage.getUsers() returned:', loadedUsers);
+                        loadedUsers = [];
+                    }
 
                     const email = firebaseUser.email;
                     const existingUser = loadedUsers.find(u => u.email === email);
@@ -59,7 +65,7 @@ function App() {
 
                         const loadedVotes = await storage.getVotes();
                         setUsers(loadedUsers);
-                        setVotes(loadedVotes);
+                        setVotes(loadedVotes || []); // 🛡️ SAFETY
 
                         if (!existingUser.preferredRole) setShowRoleModal(true);
                     } else {
@@ -67,8 +73,9 @@ function App() {
                         setShowClaimModal(true);
                     }
                 } catch (error) {
-                    console.error('Errore caricamento dati DOPO login:', error);
-                    signOut(auth);
+                    console.error('❌ Errore caricamento dati DOPO login:', error);
+                    // 🔧 FIX: Non fare signOut, mostra solo errore
+                    alert('Errore caricamento dati. Ricarica la pagina.');
                 } finally {
                     setLoading(false);
                 }
