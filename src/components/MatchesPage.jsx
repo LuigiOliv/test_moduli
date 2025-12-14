@@ -1,132 +1,62 @@
 // src/components/MatchesPage.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import { useState } from 'react';
-import utils from '../utils.js';
+import React, { useState, useEffect } from 'react';
 import storage from '../storage.js';
+import { MatchCard } from './Match.jsx';
 
-// 🚨 Importazione Aggiornata: Importa tutti i componenti figli dal modulo Match.jsx
-import { MatchCard, MatchRegistrationView, MatchAdminTools } from './Match.jsx';
+function MatchesPage({ currentUser, users = [], onSelectMatch }) {
+    const [matches, setMatches] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-/**
- * Pagina principale che mostra l'elenco delle partite e permette la navigazione.
- * @param {Array<object>} matches - Lista di tutte le partite.
- * @param {object} currentUser - L'utente corrente.
- * @param {Array<object>} users - Lista di tutti gli utenti.
- * @param {function} onSelectMatch - Callback per selezionare una partita e vederne il dettaglio.
- * @param {function} onRefreshData - Callback per ricaricare tutti i dati.
- */
-function MatchesPage({ matches = [], currentUser, users = [], onSelectMatch, onRefreshData }) {
-    const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-    const [matchToRegister, setMatchToRegister] = useState(null); // Partita selezionata per la registration/view
-    const [loadingAction, setLoadingAction] = useState(false);
+    useEffect(() => {
+        loadMatches();
+    }, []);
 
-    // Filtra le partite in base allo stato
-    const upcomingMatches = matches.filter(m => m.status === 'OPEN' || m.status === 'CLOSED');
-    const pastMatches = matches.filter(m => m.status === 'VOTING' || m.status === 'COMPLETED');
-
-    /**
-     * Gestisce l'iscrizione/disiscrizione di un utente.
-     * @param {object} match - La partita target.
-     * @param {boolean} isJoining - True se si sta iscrivendo.
-     */
-    const handleToggleParticipation = async (match, isJoining) => {
-        setLoadingAction(true);
+    const loadMatches = async () => {
+        setLoading(true);
         try {
-            await storage.toggleMatchParticipation(match.id, currentUser.id, isJoining);
-            await onRefreshData();
+            const data = await storage.getMatches();
+
+            // Controlla e aggiorna status automaticamente
+            const updatedMatches = await Promise.all(
+                data.map(match => storage.checkAndUpdateMatchStatus(match))
+            );
+
+            setMatches(updatedMatches);
         } catch (error) {
-            alert(`Impossibile ${isJoining ? 'iscriversi' : 'disiscriversi'}. Riprova.`);
-            console.error("Errore partecipazione:", error);
-        } finally {
-            setLoadingAction(false);
+            console.error('Errore caricamento partite:', error);
         }
-    };
-
-    /**
-     * Apre il modale di registrazione (mostra la lista iscritti).
-     * @param {object} match - La partita.
-     */
-    const openRegistrationModal = (match) => {
-        setMatchToRegister(match);
-        setShowRegistrationModal(true);
-    };
-
-    /**
-     * Chiude il modale di registrazione.
-     */
-    const closeRegistrationModal = () => {
-        setShowRegistrationModal(false);
-        setMatchToRegister(null);
+        setLoading(false);
     };
 
     return (
-        <div className="matches-page">
+        <div className="section-container">
+            <div className="section-header">
+                <h2>🏆 Le Tue Partite</h2>
+            </div>
 
-            {/* Strumenti Admin: Creazione e Opzioni (Solo per Admin) */}
-            {currentUser.isAdmin && (
-                <MatchAdminTools
-                    onMatchCreated={onRefreshData}
-                    onRefreshData={onRefreshData}
-                />
-            )}
-
-            {/* Partite future/aperte */}
-            <h2 className="section-title">🗓️ Prossime Partite ({upcomingMatches.length})</h2>
-            <div className="match-list">
-                {upcomingMatches.length > 0 ? (
-                    upcomingMatches.map(match => (
+            {loading ? (
+                <div className="no-votes">
+                    <h3>Caricamento partite...</h3>
+                </div>
+            ) : matches.length === 0 ? (
+                <div className="no-votes">
+                    <h3>Nessuna partita in programma</h3>
+                    <p>L'admin creerà presto la prossima partita!</p>
+                </div>
+            ) : (
+                <div className="matches-list">
+                    {matches.map(match => (
                         <MatchCard
                             key={match.id}
                             match={match}
                             currentUser={currentUser}
                             users={users}
-                            onSelect={() => onSelectMatch(match.id)}
-                            onToggleParticipation={handleToggleParticipation}
-                            onViewParticipants={() => openRegistrationModal(match)}
-                            loadingAction={loadingAction}
+                            onClick={() => onSelectMatch(match.id)}
                         />
-                    ))
-                ) : (
-                    <div className="info-card empty-state">
-                        Nessuna partita futura in programma.
-                    </div>
-                )}
-            </div>
-
-            {/* Partite passate/votabili/completate */}
-            <h2 className="section-title past-matches-title">📜 Partite Passate ({pastMatches.length})</h2>
-            <div className="match-list">
-                {pastMatches.length > 0 ? (
-                    pastMatches.map(match => (
-                        <MatchCard
-                            key={match.id}
-                            match={match}
-                            currentUser={currentUser}
-                            users={users}
-                            onSelect={() => onSelectMatch(match.id)}
-                            onToggleParticipation={() => { }} // Disabilitato per le partite passate
-                            onViewParticipants={() => openRegistrationModal(match)}
-                            loadingAction={false}
-                        />
-                    ))
-                ) : (
-                    <div className="info-card empty-state">
-                        Ancora nessuna partita giocata.
-                    </div>
-                )}
-            </div>
-
-            {/* Modale di Registrazione/Visualizzazione Iscritti */}
-            {showRegistrationModal && matchToRegister && (
-                <MatchRegistrationView
-                    match={matchToRegister}
-                    currentUser={currentUser}
-                    users={users}
-                    onClose={closeRegistrationModal}
-                    onToggleParticipation={handleToggleParticipation}
-                    loadingAction={loadingAction}
-                />
+                    ))}
+                </div>
             )}
         </div>
     );
