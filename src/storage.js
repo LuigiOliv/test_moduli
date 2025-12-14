@@ -19,31 +19,31 @@ import {
 
 const storage = {
     getUsers: async () => {
-        const snapshot = await db.collection('users').get();
+        const snapshot = await getDocs(collection(db, 'users'));
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
     setUsers: async (users) => {
-        const batch = db.batch();
+        const batch = writeBatch(db);
         users.forEach(user => {
-            const ref = db.collection('users').doc(user.id);
+            const ref = doc(db, 'users', user.id);
             batch.set(ref, user);
         });
         await batch.commit();
     },
     updateUser: async (user) => {
-        await db.collection('users').doc(user.id).set(user);
+        await setDoc(doc(db, 'users', user.id), user);
     },
     getVotes: async () => {
-        const snapshot = await db.collection('votes').get();
+        const snapshot = await getDocs(collection(db, 'votes'));
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
     addVote: async (vote) => {
-        await db.collection('votes').add(vote);
+        await addDoc(collection(db, 'votes'), vote);
     },
     setVotes: async (votes) => {
-        const batch = db.batch();
+        const batch = writeBatch(db);
         votes.forEach((vote, index) => {
-            const ref = db.collection('votes').doc(`vote_${Date.now()}_${index}`);
+            const ref = doc(db, 'votes', `vote_${Date.now()}_${index}`);
             batch.set(ref, vote);
         });
         await batch.commit();
@@ -63,18 +63,20 @@ const storage = {
         localStorage.removeItem('calcetto_current_user');
     },
     getMatches: async () => {
-        const snapshot = await db.collection('matches')
-            .orderBy('date', 'desc')
-            .limit(20)
-            .get();
+        const q = query(
+            collection(db, 'matches'),
+            orderBy('date', 'desc'),
+            limit(20)
+        );
+        const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
     getMatch: async (matchId) => {
-        const doc = await db.collection('matches').doc(matchId).get();
-        return doc.exists ? { id: doc.id, ...doc.data() } : null;
+        const docSnap = await getDoc(doc(db, 'matches', matchId));
+        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
     },
     createMatch: async (matchData) => {
-        const ref = await db.collection('matches').add({
+        const docRef = await addDoc(collection(db, 'matches'), {
             ...matchData,
             status: 'OPEN',
             teams: { gialli: [], verdi: [] },
@@ -83,31 +85,29 @@ const storage = {
             topScorerGoals: null,
             createdAt: Date.now()
         });
-        return ref.id;
+        return docRef.id;
     },
     updateMatch: async (matchId, updates) => {
-        await db.collection('matches').doc(matchId).update(updates);
+        await updateDoc(doc(db, 'matches', matchId), updates);
     },
 
     deleteMatch: async (matchId) => {
-        const batch = db.batch();
+        const batch = writeBatch(db);
 
         // Cancella registrations (sotto-collezione)
-        const regs = await db.collection('matches')
-            .doc(matchId)
-            .collection('registrations')
-            .get();
-        regs.forEach(doc => batch.delete(doc.ref));
+        const regsSnapshot = await getDocs(
+            collection(db, 'matches', matchId, 'registrations')
+        );
+        regsSnapshot.forEach(docSnap => batch.delete(docSnap.ref));
 
         // Cancella match_votes (sotto-collezione)
-        const votes = await db.collection('matches')
-            .doc(matchId)
-            .collection('match_votes')
-            .get();
-        votes.forEach(doc => batch.delete(doc.ref));
+        const votesSnapshot = await getDocs(
+            collection(db, 'matches', matchId, 'match_votes')
+        );
+        votesSnapshot.forEach(docSnap => batch.delete(docSnap.ref));
 
         // Cancella match
-        batch.delete(db.collection('matches').doc(matchId));
+        batch.delete(doc(db, 'matches', matchId));
 
         await batch.commit();
     },
@@ -117,49 +117,36 @@ const storage = {
     // ============================================================================
 
     getRegistrations: async (matchId) => {
-        const snapshot = await db.collection('matches')
-            .doc(matchId)
-            .collection('registrations')
-            .get();
+        const snapshot = await getDocs(
+            collection(db, 'matches', matchId, 'registrations')
+        );
         const registrations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         // Ordina lato client per evitare indice composito
         return registrations.sort((a, b) => a.registeredAt - b.registeredAt);
     },
 
     registerPlayer: async (matchId, player) => {
-        await db.collection('matches')
-            .doc(matchId)
-            .collection('registrations')
-            .doc(player.id)
-            .set({
-                playerId: player.id,
-                playerName: player.name,
-                isGoalkeeper: player.isGoalkeeper || false,
-                registeredAt: Date.now(),
-                registeredBy: player.id
-            });
+        await setDoc(doc(db, 'matches', matchId, 'registrations', player.id), {
+            playerId: player.id,
+            playerName: player.name,
+            isGoalkeeper: player.isGoalkeeper || false,
+            registeredAt: Date.now(),
+            registeredBy: player.id
+        });
     },
 
     registerPlayerByAdmin: async (matchId, player, adminId) => {
-        await db.collection('matches')
-            .doc(matchId)
-            .collection('registrations')
-            .doc(player.id)
-            .set({
-                playerId: player.id,
-                playerName: player.name,
-                isGoalkeeper: player.isGoalkeeper || false,
-                registeredAt: Date.now(),
-                registeredBy: adminId
-            });
+        await setDoc(doc(db, 'matches', matchId, 'registrations', player.id), {
+            playerId: player.id,
+            playerName: player.name,
+            isGoalkeeper: player.isGoalkeeper || false,
+            registeredAt: Date.now(),
+            registeredBy: adminId
+        });
     },
 
     unregisterPlayer: async (matchId, playerId) => {
-        await db.collection('matches')
-            .doc(matchId)
-            .collection('registrations')
-            .doc(playerId)
-            .delete();
+        await deleteDoc(doc(db, 'matches', matchId, 'registrations', playerId));
     },
 
     // ============================================================================
@@ -167,45 +154,34 @@ const storage = {
     // ============================================================================
 
     getMatchVotes: async (matchId) => {
-        const snapshot = await db.collection('matches')
-            .doc(matchId)
-            .collection('match_votes')
-            .get();
+        const snapshot = await getDocs(
+            collection(db, 'matches', matchId, 'match_votes')
+        );
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
 
     getMyMatchVote: async (matchId, voterId) => {
-        const doc = await db.collection('matches')
-            .doc(matchId)
-            .collection('match_votes')
-            .doc(voterId)
-            .get();
-        return doc.exists ? { id: doc.id, ...doc.data() } : null;
+        const docSnap = await getDoc(
+            doc(db, 'matches', matchId, 'match_votes', voterId)
+        );
+        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
     },
 
     saveMatchVote: async (matchId, voterId, voterTeam, votes) => {
-        await db.collection('matches')
-            .doc(matchId)
-            .collection('match_votes')
-            .doc(voterId)
-            .set({
-                voterId,
-                voterTeam,
-                votes,
-                submittedAt: Date.now(),
-                lastModifiedAt: Date.now()
-            });
+        await setDoc(doc(db, 'matches', matchId, 'match_votes', voterId), {
+            voterId,
+            voterTeam,
+            votes,
+            submittedAt: Date.now(),
+            lastModifiedAt: Date.now()
+        });
     },
 
     updateMatchVote: async (matchId, voterId, votes) => {
-        await db.collection('matches')
-            .doc(matchId)
-            .collection('match_votes')
-            .doc(voterId)
-            .update({
-                votes,
-                lastModifiedAt: Date.now()
-            });
+        await updateDoc(doc(db, 'matches', matchId, 'match_votes', voterId), {
+            votes,
+            lastModifiedAt: Date.now()
+        });
     },
 
     checkAndUpdateMatchStatus: async (match) => {
@@ -219,7 +195,7 @@ const storage = {
                 return match;
             } else {
                 console.log(`⏰ Manual override scaduto, rimuovo flag`);
-                await db.collection('matches').doc(match.id).update({
+                await updateDoc(doc(db, 'matches', match.id), {
                     manualOverride: false,
                     manualOverrideUntil: null
                 });
@@ -270,7 +246,7 @@ const storage = {
 
         // Aggiorna se necessario
         if (needsUpdate) {
-            await db.collection('matches').doc(match.id).update({ status: newStatus });
+            await updateDoc(doc(db, 'matches', match.id), { status: newStatus });
             return { ...match, status: newStatus };
         }
 
