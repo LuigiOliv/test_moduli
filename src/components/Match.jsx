@@ -1,436 +1,523 @@
 // src/components/Match.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import utils from '../utils.js';
 import storage from '../storage.js';
 
-// =========================================================================
-// 1. MATCH CARD (Scheda Partita Singola)
-// =========================================================================
+// ============================================================================
+// MATCH CARD (Scheda Partita nella Lista)
+// ============================================================================
 
-/**
- * Componente per la singola scheda di una partita (usato in MatchesPage).
- * [Logica copiata dal precedente MatchCard.jsx]
- */
-export function MatchCard({ 
-    match, 
-    currentUser, 
-    users, 
-    onSelect, 
-    onToggleParticipation, 
-    onViewParticipants,
-    loadingAction 
-}) {
-    
-    // --- Variabili Derivate ---
-    const isRegistered = match.participants && match.participants.includes(currentUser.id);
-    const participantCount = match.participants ? match.participants.length : 0;
-    const maxPlayers = match.maxPlayers || 10;
-    const isFull = participantCount >= maxPlayers;
-    const matchTime = utils.formatTime(match.date);
-    const statusClass = match.status.toLowerCase();
+export function MatchCard({ match, currentUser, users, onClick }) {
+    const [registrations, setRegistrations] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // ... (Logica voteStatus rimane invariata) ...
-    const voteStatus = useMemo(() => {
-        if (match.status !== 'VOTING') return null;
-        const isParticipant = match.participants && match.participants.includes(currentUser.id);
-        return { 
-            canVote: isParticipant, 
-            voted: false 
-        };
-    }, [match, currentUser.id]);
+    useEffect(() => {
+        loadRegistrations();
+    }, [match.id]);
 
-    // --- Logica Pulsanti di Azione ---
-    const renderActionButton = () => {
-        if (loadingAction) {
-            return (
-                <button className={`button action-button loading`} disabled>
-                    Caricamento...
-                </button>
-            );
-        }
-
-        switch (match.status) {
-            case 'OPEN':
-                if (isRegistered) {
-                    return (
-                        <button 
-                            className="button secondary action-button" 
-                            onClick={(e) => { e.stopPropagation(); onToggleParticipation(match, false); }}
-                        >
-                            Disiscriviti
-                        </button>
-                    );
-                } else if (isFull) {
-                    return (
-                        <button 
-                            className="button disabled action-button full" 
-                            disabled
-                        >
-                            Piena (Posti: {participantCount}/{maxPlayers})
-                        </button>
-                    );
-                } else {
-                    return (
-                        <button 
-                            className="button primary action-button" 
-                            onClick={(e) => { e.stopPropagation(); onToggleParticipation(match, true); }}
-                        >
-                            Iscriviti ({participantCount}/{maxPlayers})
-                        </button>
-                    );
-                }
-
-            case 'CLOSED':
-                // ... (Logica CLOSED)
-                return (
-                    <button 
-                        className="button secondary action-button" 
-                        onClick={(e) => { e.stopPropagation(); onViewParticipants(); }}
-                    >
-                        Iscrizioni Chiuse ({participantCount} iscritti)
-                    </button>
-                );
-
-            case 'VOTING':
-                // ... (Logica VOTING)
-                if (voteStatus.canVote) {
-                    return (
-                        <button 
-                            className={`button ${voteStatus.voted ? 'success' : 'primary'} action-button`} 
-                            onClick={onSelect}
-                        >
-                            {voteStatus.voted ? 'Voto Inviato' : 'Vota ora!'}
-                        </button>
-                    );
-                }
-                return (
-                    <button 
-                        className="button secondary action-button" 
-                        onClick={onSelect}
-                    >
-                        Visualizza Partita
-                    </button>
-                );
-
-            case 'COMPLETED':
-                // ... (Logica COMPLETED)
-                return (
-                    <button 
-                        className="button secondary action-button" 
-                        onClick={onSelect}
-                    >
-                        Vedi Risultati
-                    </button>
-                );
-
-            default:
-                // ... (Logica default)
-                return (
-                    <button 
-                        className="button disabled action-button" 
-                        disabled
-                    >
-                        Stato Sconosciuto
-                    </button>
-                );
-        }
-    };
-
-    return (
-        <div 
-            className={`match-card status-${statusClass} ${isRegistered ? 'registered' : ''}`}
-            onClick={onSelect}
-        >
-            <div className="match-card-header">
-                <span className="match-date">{utils.formatMatchDateFull(match.date)}</span>
-                <span className={`match-status-tag status-tag-${statusClass}`}>
-                    {match.status}
-                </span>
-            </div>
-
-            <div className="match-card-details">
-                {/* ... (Dettagli partita) ... */}
-                <div className="match-time-location">
-                    🕒 {matchTime} @ {match.location || 'Campo non specificato'}
-                </div>
-                
-                {match.status === 'COMPLETED' && match.score && (
-                    <div className="match-score-summary">
-                        <span className="team-gialli">Gialli {match.score.gialli}</span>
-                        <span className="score-divider">-</span>
-                        <span className="team-verdi">Verdi {match.score.verdi}</span>
-                    </div>
-                )}
-                
-                <div className="match-participants" onClick={(e) => { e.stopPropagation(); onViewParticipants(); }}>
-                    👥 Iscritti: {participantCount}
-                    {participantCount > 0 && 
-                        <span className="participant-names">
-                            ({match.participants.slice(0, 3).map(id => users.find(u => u.id === id)?.nickname || utils.getInitials(users.find(u => u.id === id)?.displayName || id)).join(', ')})
-                        </span>
-                    }
-                </div>
-            </div>
-
-            <div className="match-card-actions">
-                {['OPEN', 'CLOSED'].includes(match.status) && (
-                    <div className="match-deadline">
-                        {match.status === 'OPEN' ? `Iscrizioni: ${utils.formatDeadlineDisplay(match.deadline)}` : 'Iscrizioni chiuse.'}
-                    </div>
-                )}
-                {renderActionButton()}
-            </div>
-        </div>
-    );
-}
-
-// =========================================================================
-// 2. MATCH REGISTRATION VIEW (Modale/Vista Iscritti)
-// =========================================================================
-
-/**
- * Modale per visualizzare l'elenco degli iscritti e gestire l'iscrizione/disiscrizione.
- * @param {object} match - La partita.
- * @param {object} currentUser - L'utente corrente.
- * @param {Array<object>} users - Lista di tutti gli utenti.
- * @param {function} onClose - Callback per chiudere la modale.
- * @param {function} onToggleParticipation - Callback per iscriversi/disiscriversi.
- * @param {boolean} loadingAction - Stato di caricamento.
- */
-export function MatchRegistrationView({ 
-    match, 
-    currentUser, 
-    users, 
-    onClose, 
-    onToggleParticipation,
-    loadingAction
-}) {
-    const isRegistered = match.participants && match.participants.includes(currentUser.id);
-    const participantCount = match.participants ? match.participants.length : 0;
-    const maxPlayers = match.maxPlayers || 10;
-    const isFull = participantCount >= maxPlayers;
-    
-    // Funzione per ottenere la lista degli iscritti con i dati utente
-    const getParticipants = () => {
-        if (!match.participants) return [];
-        // Filtra e mappa, assicurandosi che gli utenti esistano
-        return match.participants
-            .map(id => users.find(u => u.id === id))
-            .filter(u => u !== undefined);
-    };
-    
-    const participants = getParticipants();
-    
-    // Controlla se l'iscrizione è ancora aperta (prima della deadline)
-    const isRegistrationOpen = match.status === 'OPEN';
-
-    const handleToggle = () => {
-        onToggleParticipation(match, !isRegistered);
-    };
-
-    return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content modal-registration" onClick={(e) => e.stopPropagation()}>
-                <h2>👥 Iscritti per {utils.formatMatchDateFull(match.date)}</h2>
-                
-                <p className="registration-status">
-                    Posti: **{participantCount} / {maxPlayers}** - 
-                    {isRegistrationOpen ? (
-                        <span> Iscrizioni aperte fino a {utils.formatDeadlineDisplay(match.deadline)}</span>
-                    ) : (
-                        <span className="closed"> Iscrizioni chiuse.</span>
-                    )}
-                </p>
-
-                <div className="participants-list-container">
-                    {participants.map((player, index) => (
-                        <div key={player.id} className="participant-item">
-                            <span className="participant-rank">#{index + 1}</span>
-                            <span className="participant-name">{player.nickname || player.displayName}</span>
-                            {player.id === currentUser.id && <span className="tag me">Tu</span>}
-                        </div>
-                    ))}
-                    
-                    {participants.length === 0 && (
-                        <div className="empty-list-message">Nessun iscritto ancora. Sii il primo!</div>
-                    )}
-                </div>
-
-                <div className="modal-actions">
-                    <button className="button secondary" onClick={onClose}>
-                        Chiudi
-                    </button>
-                    
-                    {isRegistrationOpen && (
-                        <button 
-                            className={`button ${isRegistered ? 'red' : 'primary'}`}
-                            onClick={handleToggle}
-                            disabled={loadingAction || (!isRegistered && isFull)}
-                        >
-                            {loadingAction ? '...' : 
-                             isRegistered ? 'Disiscriviti' : 
-                             isFull ? 'Piena' : 'Iscriviti'}
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// =========================================================================
-// 3. MATCH ADMIN TOOLS (Creazione e Gestione Rapida)
-// =========================================================================
-
-/**
- * Componente per gli strumenti amministrativi (Creazione Nuova Partita).
- * @param {function} onMatchCreated - Callback per ricaricare i dati dopo la creazione.
- * @param {function} onRefreshData - Callback per ricaricare tutti i dati.
- */
-export function MatchAdminTools({ onMatchCreated, onRefreshData }) {
-    const [isCreating, setIsCreating] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    
-    // Calcola la data/ora predefinita (Giovedì prossimo, 20:30)
-    const getDefaultDateTime = () => {
-        const now = new Date();
-        const dayOfWeek = now.getDay(); // 0=Dom, 4=Gio
-        const daysUntilThursday = (4 - dayOfWeek + 7) % 7;
-        
-        const nextThursday = new Date(now);
-        nextThursday.setDate(now.getDate() + daysUntilThursday);
-        nextThursday.setHours(20, 30, 0, 0); // 20:30
-
-        return utils.formatDeadline(nextThursday.toISOString());
-    };
-    
-    // Calcola la deadline di iscrizione (mercoledì 18:00)
-    const getDefaultDeadline = (matchDateString) => {
-        const matchDate = new Date(matchDateString);
-        // Scadenza: 1 giorno prima, alle 18:00
-        const deadline = new Date(matchDate.getTime() - 1 * 24 * 60 * 60 * 1000); 
-        deadline.setHours(18, 0, 0, 0); 
-        return utils.formatDeadline(deadline.toISOString());
-    };
-
-    const defaultMatchDateTime = getDefaultDateTime();
-    const defaultDeadline = getDefaultDeadline(defaultMatchDateTime);
-
-    const [date, setDate] = useState(defaultMatchDateTime);
-    const [deadline, setDeadline] = useState(defaultDeadline);
-    const [maxPlayers, setMaxPlayers] = useState(10);
-    const [location, setLocation] = useState('Calcetto');
-
-    const handleCreateMatch = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-
-        const newMatch = {
-            date: date,
-            deadline: deadline,
-            maxPlayers: parseInt(maxPlayers),
-            location: location.trim(),
-            status: 'OPEN',
-            participants: [],
-            teams: null,
-            score: null,
-            createdAt: new Date().toISOString()
-        };
-
+    const loadRegistrations = async () => {
         try {
-            await storage.createMatch(newMatch);
-            // Resetta lo stato del form e chiude
-            setIsCreating(false);
-            setDate(getDefaultDateTime());
-            setDeadline(getDefaultDeadline(getDefaultDateTime()));
-            alert("Partita creata con successo!");
-            onMatchCreated(); // Ricarica i dati in App.jsx
-        } catch (err) {
-            setError("Errore nella creazione della partita: " + err.message);
-        } finally {
-            setLoading(false);
+            const regs = await storage.getRegistrations(match.id);
+            setRegistrations(regs);
+        } catch (error) {
+            console.error('Errore caricamento iscrizioni:', error);
         }
+        setLoading(false);
     };
 
-    return (
-        <div className="admin-tools-container">
-            <h3 className="section-title">Strumenti Admin</h3>
-            <div className="admin-actions">
-                <button 
-                    className="button primary small-button" 
-                    onClick={() => setIsCreating(!isCreating)}
-                >
-                    {isCreating ? '❌ Annulla Creazione' : '➕ Crea Nuova Partita'}
-                </button>
-                 <button 
-                    className="button secondary small-button" 
-                    onClick={onRefreshData}
-                >
-                    🔄 Ricarica Dati
-                </button>
-            </div>
-            
-            {isCreating && (
-                <form className="create-match-form" onSubmit={handleCreateMatch}>
-                    <h4>Nuovo Match</h4>
-                    {error && <div className="error-message">{error}</div>}
-                    
-                    <div className="form-row">
-                        <label>
-                            Data & Ora Partita:
-                            <input 
-                                type="datetime-local" 
-                                value={date} 
-                                onChange={(e) => {
-                                    setDate(e.target.value);
-                                    // Aggiorna la deadline automaticamente
-                                    setDeadline(getDefaultDeadline(e.target.value)); 
-                                }} 
-                                required 
-                            />
-                        </label>
-                        <label>
-                            Max Giocatori:
-                            <input 
-                                type="number" 
-                                value={maxPlayers} 
-                                onChange={(e) => setMaxPlayers(e.target.value)} 
-                                min="6" 
-                                max="20" 
-                                required 
-                            />
-                        </label>
-                    </div>
-                    
-                    <label>
-                        Deadline Iscrizioni:
-                        <input 
-                            type="datetime-local" 
-                            value={deadline} 
-                            onChange={(e) => setDeadline(e.target.value)} 
-                            required 
-                        />
-                    </label>
-                    
-                    <label>
-                        Luogo:
-                        <input 
-                            type="text" 
-                            value={location} 
-                            onChange={(e) => setLocation(e.target.value)} 
-                            placeholder="Nome del campo"
-                        />
-                    </label>
+    const getStatusBadge = () => {
+        if (match.status === 'OPEN' || match.status === 'CLOSED') {
+            return { text: '📝 APERTA', class: 'open' };
+        }
+        if (match.status === 'VOTING') {
+            return { text: '⭐ DA VOTARE', class: 'voting' };
+        }
+        return { text: '✅ FINITA', class: 'completed' };
+    };
 
-                    <button type="submit" className="button primary" disabled={loading}>
-                        {loading ? 'Creazione...' : 'Conferma Partita'}
-                    </button>
-                </form>
-            )}
+    const countGoalkeepers = () => {
+        return registrations.filter(r => r.isGoalkeeper).length;
+    };
+
+    const status = getStatusBadge();
+    const gkCount = countGoalkeepers();
+
+    if (loading) {
+        return (
+            <div className="match-card">
+                <div className="match-card-center">
+                    <h3>Caricamento...</h3>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={`match-card ${status.class}`} onClick={onClick}>
+            <div className="match-card-left">
+                <span className={`match-status ${status.class}`}>{status.text}</span>
+            </div>
+            <div className="match-card-center">
+                <h3>{utils.formatMatchDate(match.date)}</h3>
+            </div>
+            <div className="match-card-right">
+                {(match.status === 'OPEN' || match.status === 'CLOSED') && (
+                    <>
+                        <div className="match-info">
+                            👥 {registrations.length}/{match.maxPlayers} {utils.renderGoalkeeperIcons(gkCount)}
+                        </div>
+                        <div className="match-info" style={{ fontSize: '0.75rem' }}>
+                            Chiude: {utils.formatDeadline(match.registrationDeadlineForced)}
+                        </div>
+                    </>
+                )}
+                {match.status === 'VOTING' && match.score && (
+                    <>
+                        <div className="match-info">
+                            Gialli {match.score.giallo}-{match.score.verdi} Verdi
+                        </div>
+                        <div className="match-info" style={{ fontSize: '0.75rem' }}>
+                            🗳️ Vota entro domenica
+                        </div>
+                    </>
+                )}
+                {match.status === 'COMPLETED' && match.score && (
+                    <>
+                        <div className="match-info">
+                            Gialli {match.score.gialli}-{match.score.verdi} Verdi
+                        </div>
+                        <div className="match-info" style={{ fontSize: '0.75rem' }}>
+                            🏆 {utils.getPlayerNameById(match.topScorer, users)}
+                        </div>
+                    </>
+                )}
+            </div>
         </div>
+    );
+}
+
+// ============================================================================
+// VISTA ISCRIZIONI PARTITA
+// ============================================================================
+
+export function MatchRegistrationView({ match, currentUser, users, onBack, onUpdate }) {
+    const [registrations, setRegistrations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+    const [selectedPlayerId, setSelectedPlayerId] = useState('');
+    const [isGoalkeeper, setIsGoalkeeper] = useState(false);
+
+    useEffect(() => {
+        loadRegistrations();
+    }, [match.id]);
+
+    const loadRegistrations = async () => {
+        setLoading(true);
+        try {
+            const regs = await storage.getRegistrations(match.id);
+            setRegistrations(regs);
+        } catch (error) {
+            console.error('Errore caricamento iscrizioni:', error);
+        }
+        setLoading(false);
+    };
+
+    const isRegistered = registrations.some(r => r.playerId === currentUser.id);
+    const isClosed = match.status === 'CLOSED';
+
+    const handleRegister = async () => {
+        setActionLoading(true);
+        try {
+            await storage.registerPlayer(match.id, currentUser);
+            await loadRegistrations();
+            if (onUpdate) onUpdate();
+        } catch (error) {
+            console.error('Errore iscrizione:', error);
+            alert('Errore durante l\'iscrizione. Riprova.');
+        }
+        setActionLoading(false);
+    };
+
+    const handleUnregister = async (playerId, playerName) => {
+        const isCurrentUser = playerId === currentUser.id;
+        const message = isCurrentUser
+            ? 'Vuoi disiscriverti dalla partita?'
+            : `Rimuovere ${playerName} dalla partita?`;
+
+        if (!confirm(message)) return;
+
+        setActionLoading(true);
+        try {
+            await storage.unregisterPlayer(match.id, playerId);
+            await loadRegistrations();
+            if (onUpdate) onUpdate();
+        } catch (error) {
+            console.error('Errore disiscrizione:', error);
+            alert('Errore durante la disiscrizione. Riprova.');
+        }
+        setActionLoading(false);
+    };
+
+    const handleAddPlayer = async () => {
+        if (!selectedPlayerId) {
+            alert('Seleziona un giocatore!');
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            const player = users.find(u => u.id === selectedPlayerId);
+            const playerToAdd = {
+                ...player,
+                isGoalkeeper: isGoalkeeper
+            };
+
+            await storage.registerPlayerByAdmin(match.id, playerToAdd, currentUser.id);
+            await loadRegistrations();
+            if (onUpdate) onUpdate();
+
+            // Reset e chiudi modale
+            setSelectedPlayerId('');
+            setIsGoalkeeper(false);
+            setShowAddPlayerModal(false);
+        } catch (error) {
+            console.error('Errore aggiunta giocatore:', error);
+            alert('Errore durante l\'aggiunta. Riprova.');
+        }
+        setActionLoading(false);
+    };
+
+    const getAvailablePlayers = () => {
+        const registeredIds = registrations.map(r => r.playerId);
+        return users.filter(u => !registeredIds.includes(u.id));
+    };
+
+    const countGoalkeepers = () => {
+        return registrations.filter(r => r.isGoalkeeper).length;
+    };
+
+    if (loading) {
+        return (
+            <div className="section-container">
+                <div className="section-header">
+                    <h2>Caricamento...</h2>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <div className="section-container">
+                <div className="detail-card">
+                    <div className="detail-header">
+                        <span className={`match-status ${isClosed ? 'completed' : 'open'}`}>
+                            {isClosed ? '🔒 ISCRIZIONI CHIUSE' : '📝 ISCRIZIONI APERTE'}
+                        </span>
+
+                        <div className="header-info-grid">
+                            <div className="header-main">
+                                <div className="detail-date">{utils.formatMatchDateFull(match.date)}</div>
+                                <div className="detail-time">⏰ Ore {utils.formatTime(match.date)}</div>
+                                <div className="detail-location">📍 {match.location}</div>
+                            </div>
+                            <div className="header-aside">
+                                <div className="recap-box">
+                                    <div className="recap-row">
+                                        {utils.renderGoalkeeperIcons(countGoalkeepers())}
+                                        <span><strong>{registrations.length}</strong>/{match.maxPlayers}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="detail-content">
+                        {isClosed && match.teams && match.teams.gialli && match.teams.gialli.length > 0 ? (
+                            <>
+                                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                    <h3 style={{ color: 'var(--volt)', fontSize: '1.8rem', marginBottom: '10px' }}>
+                                        ⚔️ SQUADRE ASSEGNATE
+                                    </h3>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                        Le squadre sono pronte per la partita!
+                                    </p>
+                                </div>
+
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                                    gap: '20px',
+                                    marginBottom: '20px'
+                                }}>
+                                    {/* SQUADRA GIALLI */}
+                                    <div style={{
+                                        background: 'rgba(255, 215, 0, 0.1)',
+                                        border: '2px solid #FFD700',
+                                        borderRadius: '8px',
+                                        padding: '20px'
+                                    }}>
+                                        <h4 style={{
+                                            color: '#FFD700',
+                                            fontSize: '1.5rem',
+                                            marginBottom: '15px',
+                                            textAlign: 'center',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '2px'
+                                        }}>
+                                            🟡 GIALLI ({match.teams.gialli.length})
+                                        </h4>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {match.teams.gialli.map((player, index) => (
+                                                <div key={player.playerId} style={{
+                                                    background: 'rgba(255, 255, 255, 0.05)',
+                                                    padding: '12px',
+                                                    borderRadius: '4px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '12px'
+                                                }}>
+                                                    <span style={{
+                                                        background: 'rgba(255, 215, 0, 0.3)',
+                                                        color: '#FFD700',
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        borderRadius: '50%',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold'
+                                                    }}>
+                                                        {index + 1}
+                                                    </span>
+                                                    <span style={{ flex: 1, fontSize: '15px' }}>
+                                                        {player.playerName}
+                                                        {player.playerId === currentUser.id && ' (Tu)'}
+                                                    </span>
+                                                    {player.isGoalkeeper && (
+                                                        <span style={{ fontSize: '18px' }}>🧤</span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* SQUADRA VERDI */}
+                                    <div style={{
+                                        background: 'rgba(72, 187, 120, 0.1)',
+                                        border: '2px solid #48bb78',
+                                        borderRadius: '8px',
+                                        padding: '20px'
+                                    }}>
+                                        <h4 style={{
+                                            color: '#48bb78',
+                                            fontSize: '1.5rem',
+                                            marginBottom: '15px',
+                                            textAlign: 'center',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '2px'
+                                        }}>
+                                            🟢 VERDI ({match.teams.verdi.length})
+                                        </h4>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {match.teams.verdi.map((player, index) => (
+                                                <div key={player.playerId} style={{
+                                                    background: 'rgba(255, 255, 255, 0.05)',
+                                                    padding: '12px',
+                                                    borderRadius: '4px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '12px'
+                                                }}>
+                                                    <span style={{
+                                                        background: 'rgba(72, 187, 120, 0.3)',
+                                                        color: '#48bb78',
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        borderRadius: '50%',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold'
+                                                    }}>
+                                                        {index + 1}
+                                                    </span>
+                                                    <span style={{ flex: 1, fontSize: '15px' }}>
+                                                        {player.playerName}
+                                                        {player.playerId === currentUser.id && ' (Tu)'}
+                                                    </span>
+                                                    {player.isGoalkeeper && (
+                                                        <span style={{ fontSize: '18px' }}>🧤</span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {currentUser.isAdmin && (
+                                    <div style={{
+                                        background: 'rgba(102, 126, 234, 0.1)',
+                                        border: '1px solid rgba(102, 126, 234, 0.3)',
+                                        borderRadius: '8px',
+                                        padding: '15px',
+                                        textAlign: 'center',
+                                        marginTop: '20px'
+                                    }}>
+                                        <p style={{ color: '#667eea', fontSize: '14px', marginBottom: '10px' }}>
+                                            ℹ️ Per modificare le squadre, torna alla sezione Admin e clicca "👥 Assegna Squadre"
+                                        </p>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                                            Per annullare tutto: "🔓 Riapri Iscrizioni" (cancellerà squadre e risultati)
+                                        </p>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <div className="players-list">
+                                    <h3>👥 Chi Gioca ({registrations.length})</h3>
+                                    {registrations.length === 0 ? (
+                                        <div className="no-votes">
+                                            <p>Nessun iscritto ancora. Sii il primo!</p>
+                                        </div>
+                                    ) : (
+                                        registrations.map(reg => (
+                                            <div key={reg.id} className={`player-item ${reg.isGoalkeeper ? 'gk' : ''}`}>
+                                                <div className="avatar">{utils.getInitials(reg.playerName)}</div>
+                                                <div className="player-info">
+                                                    <div className="player-name">
+                                                        {reg.playerName}
+                                                        {reg.playerId === currentUser.id && ' (Tu)'}
+                                                    </div>
+                                                    <div className="player-role">
+                                                        {reg.isGoalkeeper ? '🧤 Portiere' : 'Movimento'}
+                                                    </div>
+                                                </div>
+
+                                                {(reg.playerId === currentUser.id || currentUser.isAdmin) && !isClosed && (
+                                                    <div
+                                                        className="unsubscribe-btn"
+                                                        onClick={() => handleUnregister(reg.playerId, reg.playerName)}
+                                                    >
+                                                        ✕
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {currentUser.isAdmin && !isClosed && (
+                                    <div className="admin-add-player">
+                                        <button
+                                            className="btn-add-player"
+                                            onClick={() => setShowAddPlayerModal(true)}
+                                        >
+                                            + AGGIUNGI GIOCATORE
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {!isClosed && (
+                            <div className="deadline-msg">
+                                Iscriviti entro le ore 20 del {utils.formatDeadlineDisplay(match.registrationDeadlineDisplay)}<br />
+                                per avere la possibilità di cambiare campo se necessario
+                            </div>
+                        )}
+
+                        {isClosed && (
+                            <div className="deadline-msg closed">
+                                Le iscrizioni sono chiuse.<br />
+                                L'admin sta preparando le squadre!
+                            </div>
+                        )}
+
+                        <div className="btn-group">
+                            <button className="btn btn-secondary" onClick={onBack}>
+                                ← INDIETRO
+                            </button>
+                            {!isClosed && (
+                                isRegistered ? (
+                                    <button className="btn btn-registered" disabled>
+                                        ✓ SONO GIÀ ISCRITTO
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={handleRegister}
+                                        disabled={actionLoading}
+                                    >
+                                        {actionLoading ? 'Attendere...' : '✓ ISCRIVITI'}
+                                    </button>
+                                )
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {showAddPlayerModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h2>👥 Aggiungi Giocatore</h2>
+
+                        <div className="form-group">
+                            <label>Seleziona Giocatore *</label>
+                            <select
+                                value={selectedPlayerId}
+                                onChange={(e) => setSelectedPlayerId(e.target.value)}
+                            >
+                                <option value="">-- Seleziona --</option>
+                                {getAvailablePlayers().map(player => (
+                                    <option key={player.id} value={player.id}>
+                                        {player.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <div className="checkbox-item">
+                                <input
+                                    type="checkbox"
+                                    id="admin-gk"
+                                    checked={isGoalkeeper}
+                                    onChange={(e) => setIsGoalkeeper(e.target.checked)}
+                                />
+                                <label htmlFor="admin-gk">🧤 È un portiere</label>
+                            </div>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => {
+                                    setShowAddPlayerModal(false);
+                                    setSelectedPlayerId('');
+                                    setIsGoalkeeper(false);
+                                }}
+                            >
+                                Annulla
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleAddPlayer}
+                                disabled={!selectedPlayerId || actionLoading}
+                            >
+                                {actionLoading ? 'Attendere...' : '✓ Aggiungi'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
