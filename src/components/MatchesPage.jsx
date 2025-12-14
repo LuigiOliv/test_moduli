@@ -16,7 +16,7 @@ import { MatchCard, MatchRegistrationView, MatchAdminTools } from './Match.jsx';
  * @param {function} onSelectMatch - Callback per selezionare una partita e vederne il dettaglio.
  * @param {function} onRefreshData - Callback per ricaricare tutti i dati.
  */
-function MatchesPage({ matches, currentUser, users, onSelectMatch, onRefreshData }) {
+function MatchesPage({ matches = [], currentUser, users = [], onSelectMatch, onRefreshData }) {
     const [showRegistrationModal, setShowRegistrationModal] = useState(false);
     const [matchToRegister, setMatchToRegister] = useState(null); // Partita selezionata per la registration/view
     const [loadingAction, setLoadingAction] = useState(false);
@@ -34,7 +34,7 @@ function MatchesPage({ matches, currentUser, users, onSelectMatch, onRefreshData
         setLoadingAction(true);
         try {
             await storage.toggleMatchParticipation(match.id, currentUser.id, isJoining);
-            await onRefreshData(); 
+            await onRefreshData();
         } catch (error) {
             alert(`Impossibile ${isJoining ? 'iscriversi' : 'disiscriversi'}. Riprova.`);
             console.error("Errore partecipazione:", error);
@@ -42,7 +42,7 @@ function MatchesPage({ matches, currentUser, users, onSelectMatch, onRefreshData
             setLoadingAction(false);
         }
     };
-    
+
     /**
      * Apre il modale di registrazione (mostra la lista iscritti).
      * @param {object} match - La partita.
@@ -62,12 +62,12 @@ function MatchesPage({ matches, currentUser, users, onSelectMatch, onRefreshData
 
     return (
         <div className="matches-page">
-            
+
             {/* Strumenti Admin: Creazione e Opzioni (Solo per Admin) */}
             {currentUser.isAdmin && (
-                <MatchAdminTools 
-                    onMatchCreated={onRefreshData} 
-                    onRefreshData={onRefreshData} 
+                <MatchAdminTools
+                    onMatchCreated={onRefreshData}
+                    onRefreshData={onRefreshData}
                 />
             )}
 
@@ -105,7 +105,7 @@ function MatchesPage({ matches, currentUser, users, onSelectMatch, onRefreshData
                             currentUser={currentUser}
                             users={users}
                             onSelect={() => onSelectMatch(match.id)}
-                            onToggleParticipation={() => {}} // Disabilitato per le partite passate
+                            onToggleParticipation={() => { }} // Disabilitato per le partite passate
                             onViewParticipants={() => openRegistrationModal(match)}
                             loadingAction={false}
                         />

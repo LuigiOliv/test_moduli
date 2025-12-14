@@ -34,6 +34,7 @@ function App() {
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [users, setUsers] = useState([]);
     const [votes, setVotes] = useState([]);
+    const [matches, setMatches] = useState([]);
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [showClaimModal, setShowClaimModal] = useState(false);
     const [pendingEmail, setPendingEmail] = useState(getPendingEmail());
@@ -64,8 +65,10 @@ function App() {
                         storage.setCurrentUser(userWithAdmin);
 
                         const loadedVotes = await storage.getVotes();
+                        const loadedMatches = await storage.getMatches();
                         setUsers(loadedUsers);
                         setVotes(loadedVotes || []); // 🛡️ SAFETY
+                        setMatches(loadedMatches || []); // 🛡️ SAFETY
 
                         if (!existingUser.preferredRole) setShowRoleModal(true);
                     } else {
@@ -227,6 +230,15 @@ function App() {
         storage.setCurrentUser(profile);
         setShowAntonioSelector(false);
         setAntonioProfiles([]);
+    };
+
+    const handleRefreshData = async () => {
+        try {
+            const loadedMatches = await storage.getMatches();
+            setMatches(loadedMatches || []);
+        } catch (error) {
+            console.error('Error refreshing matches:', error);
+        }
     };
 
     if (loading) {
@@ -417,9 +429,11 @@ function App() {
                         />
                     ) : (
                         <MatchesPage
+                            matches={matches}
                             currentUser={currentUser}
                             users={users}
                             onSelectMatch={setSelectedMatch}
+                            onRefreshData={handleRefreshData}
                         />
                     )
                 ) : activeTab === 'valuta' ? (
