@@ -6,86 +6,99 @@ import storage from '../storage.js';
 import utils from '../utils.js';
 import { ROLES, SKILLS, getSkillsForPlayer } from '../constants.js';
 import { db } from '../firebase.js';
+import { collection, doc, getDocs, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { RoleEditModal } from './Modals.jsx';
 
 // =========================================================================
 // 1. SETTINGS PAGE (Impostazioni Utente)
 // =========================================================================
 
-export function SettingsPage({ user, onUpdateUser }) {
-    const [nickname, setNickname] = useState(user.nickname || '');
-    const [role, setRole] = useState(user.role || ROLES.Universale);
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(null);
+function SettingsPage({ user, onUpdateUser }) {
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [showRoleEdit, setShowRoleEdit] = useState(false);
 
-    useEffect(() => {
-        setNickname(user.nickname || '');
-        setRole(user.role || ROLES.Universale);
-        setMessage(null);
-    }, [user]);
-
-    const handleSave = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setMessage(null);
-
-        const updatedUser = {
-            ...user,
-            nickname: nickname.trim(),
-            role: role
-        };
-
-        try {
-            await onUpdateUser(updatedUser);
-            setMessage({ type: 'success', text: 'Impostazioni salvate con successo!' });
-        } catch (error) {
-            console.error("Errore salvataggio impostazioni:", error);
-            setMessage({ type: 'error', text: 'Errore nel salvataggio. Riprova.' });
-        } finally {
-            setLoading(false);
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const updatedUser = { ...user, avatar: reader.result };
+                await onUpdateUser(updatedUser);
+                setShowSuccess(true);
+                setTimeout(() => setShowSuccess(false), 3000);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
     return (
-        <div className="settings-page">
-            <h2>⚙️ Impostazioni Utente</h2>
-            <div className="info-card">
-                <p>Modifica qui il tuo nickname e il ruolo predefinito in campo.</p>
-                <p>Email: <strong>{user.email}</strong></p>
+        <div className="section-container">
+            <div className="section-header">
+                <h2>⚙️ Impostazioni</h2>
             </div>
 
-            <form className="settings-form" onSubmit={handleSave}>
-                <label>
-                    Nickname:
-                    <input
-                        type="text"
-                        value={nickname}
-                        onChange={(e) => setNickname(e.target.value)}
-                        placeholder={user.displayName}
-                        maxLength="20"
-                    />
-                    <small>Il tuo nickname sarà usato nelle classifiche e nelle liste partecipanti.</small>
-                </label>
-
-                <label>
-                    Ruolo Predefinito:
-                    <select value={role} onChange={(e) => setRole(e.target.value)}>
-                        {Object.keys(ROLES).map(key => (
-                            <option key={key} value={ROLES[key]}>{ROLES[key]}</option>
-                        ))}
-                    </select>
-                    <small>Influenza il set di skill mostrato nell'interfaccia di voto.</small>
-                </label>
-
-                {message && (
-                    <div className={`form-message ${message.type}`}>
-                        {message.text}
+            <div className="settings-group">
+                <h3>Foto Profilo</h3>
+                <div className="settings-info">
+                    <div className="settings-avatar">
+                        {user.avatar ? <img src={user.avatar} alt={user.name} /> : utils.getInitials(user.name)}
                     </div>
-                )}
+                    <div className="file-input-wrapper">
+                        <input type="file" id="avatar-upload" accept="image/*" onChange={handleFileChange} />
+                        <label htmlFor="avatar-upload" className="file-input-label">📷 Carica Foto</label>
+                    </div>
+                </div>
+            </div>
 
-                <button type="submit" className="button primary" disabled={loading}>
-                    {loading ? 'Salvataggio...' : 'Salva Modifiche'}
-                </button>
-            </form>
+            <div className="settings-group">
+                <h3>Informazioni Account</h3>
+                <div className="settings-info-box">
+                    <div style={{ marginBottom: '15px' }}><strong>Nome:</strong> {user.name}</div>
+                    <div><strong>Email:</strong> {user.email}</div>
+                </div>
+            </div>
+
+            <div className="settings-group">
+                <h3>Ruoli</h3>
+                <div className="settings-info-box">
+                    <div style={{ marginBottom: '15px' }}>
+                        <strong>Ruolo preferito:</strong> {user.preferredRole || 'Non impostato'}
+                    </div>
+                    <div style={{ marginBottom: '15px' }}>
+                        <strong>Altri ruoli:</strong>
+                        <div style={{ marginTop: '8px' }}>
+                            {user.otherRoles && user.otherRoles.length > 0 ? (
+                                <div className="role-badges">
+                                    {user.otherRoles.map(role => (
+                                        <span key={role} className="role-badge">{role}</span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <span style={{ color: '#718096' }}>Nessuno</span>
+                            )}
+                        </div>
+                    </div>
+                    <button className="btn btn-secondary" onClick={() => setShowRoleEdit(true)} style={{ marginTop: '10px' }}>
+                        ✏️ Modifica Ruoli
+                    </button>
+                </div>
+            </div>
+
+            {showSuccess && <div className="success-message">✓ Impostazioni aggiornate!</div>}
+
+            {showRoleEdit && (
+                <RoleEditModal
+                    user={user}
+                    onClose={() => setShowRoleEdit(false)}
+                    onSuccess={async () => {
+                        const updatedUser = await storage.getUsers().then(users => users.find(u => u.id === user.id));
+                        await onUpdateUser(updatedUser);
+                        setShowRoleEdit(false);
+                        setShowSuccess(true);
+                        setTimeout(() => setShowSuccess(false), 3000);
+                    }}
+                />
+            )}
         </div>
     );
 }
@@ -94,108 +107,1235 @@ export function SettingsPage({ user, onUpdateUser }) {
 // 2. ADMIN PAGE (Strumenti Amministrativi)
 // =========================================================================
 
-export function AdminPage({ users, setUsers, votes, setVotes }) {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [message, setMessage] = useState(null);
+function AdminPage({ users, setUsers, votes, setVotes }) {
+    const [editingPlayer, setEditingPlayer] = useState(null);
+    const [editName, setEditName] = useState('');
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [editingVotes, setEditingVotes] = useState(null);
+    const [voteValues, setVoteValues] = useState({});
+    const [showPlayersList, setShowPlayersList] = useState(false);
 
-    const handleToggleAdmin = async (targetUser) => {
-        if (targetUser.id === storage.getCurrentUser().id) {
-            alert("Non puoi modificare il tuo stato di Admin.");
-            return;
-        }
+    // === STATI PER GESTIONE PARTITE ===
+    const [showCreateMatch, setShowCreateMatch] = useState(false);
+    const [newMatchDate, setNewMatchDate] = useState('');
+    const [newMatchTime, setNewMatchTime] = useState('21:20');
+    const [newMatchLocation, setNewMatchLocation] = useState('Campo SuperSantos, Portici');
+    const [newMatchMaxPlayers, setNewMatchMaxPlayers] = useState(18);
+    const [adminMatches, setAdminMatches] = useState([]);
+    const [adminRegistrations, setAdminRegistrations] = useState({});
 
-        const newIsAdmin = !targetUser.isAdmin;
-        if (!window.confirm(`Sei sicuro di voler ${newIsAdmin ? 'promuovere' : 'degradare'} ${targetUser.nickname || targetUser.displayName} a Admin?`)) {
-            return;
-        }
+    // STATI PER ASSEGNAZIONE SQUADRE E RISULTATO
+    const [showTeamAssignment, setShowTeamAssignment] = useState(false);
+    const [selectedMatchForTeams, setSelectedMatchForTeams] = useState(null);
+    const [teamGialli, setTeamGialli] = useState([]);
+    const [teamVerdi, setTeamVerdi] = useState([]);
+    const [showScoreModal, setShowScoreModal] = useState(false);
+    const [selectedMatchForScore, setSelectedMatchForScore] = useState(null);
+    const [scoreGialli, setScoreGialli] = useState('');
+    const [scoreVerdi, setScoreVerdi] = useState('');
+    const [topScorer, setTopScorer] = useState('');
+    const [topScorerGoals, setTopScorerGoals] = useState('');
 
-        setLoading(true);
-        setError(null);
-        setMessage(null);
+    // STATI PER MODIFICA MAX PLAYERS
+    const [editingMaxPlayers, setEditingMaxPlayers] = useState(null);
+    const [newMaxPlayers, setNewMaxPlayers] = useState('');
+
+    // Carica partite all'avvio
+    useEffect(() => {
+        loadAdminMatches();
+    }, []);
+
+    const loadAdminMatches = async () => {
         try {
-            await storage.updateUser({ ...targetUser, isAdmin: newIsAdmin });
-            const updatedUsers = await storage.getUsers();
-            setUsers(updatedUsers);
-            setMessage({ type: 'success', text: `Ruolo di ${targetUser.nickname || targetUser.displayName} aggiornato.` });
-        } catch (err) {
-            setError("Errore nell'aggiornamento del ruolo: " + err.message);
-        } finally {
-            setLoading(false);
+            console.log('🔄 Caricamento partite admin...');
+            const matches = await storage.getMatches();
+            console.log('📥 Partite caricate:', matches.length);
+
+            // Controlla e aggiorna status automaticamente
+            const updatedMatches = await Promise.all(
+                matches.map(match => storage.checkAndUpdateMatchStatus(match))
+            );
+
+            console.log('✅ Partite aggiornate:', updatedMatches);
+
+            // Verifica che le squadre ci siano
+            updatedMatches.forEach(match => {
+                if (match.teams) {
+                    console.log(`Match ${match.id} - Teams:`, match.teams);
+                }
+            });
+
+            setAdminMatches(updatedMatches);
+
+            // Carica iscrizioni per ogni partita
+            const regsMap = {};
+            for (const match of updatedMatches) {
+                const regs = await storage.getRegistrations(match.id);
+                regsMap[match.id] = regs;
+            }
+            setAdminRegistrations(regsMap);
+        } catch (error) {
+            console.error('❌ Errore caricamento partite admin:', error);
         }
     };
 
-    const handleRecalculateRatings = async () => {
-        if (!window.confirm("Sei sicuro? Questo ricalcolerà tutti i Rating in base ai voti esistenti.")) return;
+    const handleCreateMatch = async () => {
+        if (!newMatchDate || !newMatchTime || !newMatchLocation) {
+            alert('Compila tutti i campi obbligatori');
+            return;
+        }
 
-        setLoading(true);
-        setError(null);
         try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            setMessage({ type: 'success', text: 'Ricalcolo dei Rating avviato (Logica di salvataggio DB non implementata in questo esempio).' });
-        } catch (err) {
-            setError("Errore nel ricalcolo: " + err.message);
-        } finally {
-            setLoading(false);
+            // Costruisci data completa
+            const matchDateTime = new Date(`${newMatchDate}T${newMatchTime}:00`);
+
+            // Deadline display: 3 giorni prima alle 18:00
+            const regDeadlineDisplay = new Date(matchDateTime);
+            regDeadlineDisplay.setDate(regDeadlineDisplay.getDate() - 3);
+            regDeadlineDisplay.setHours(18, 0, 0, 0);
+
+            // Deadline forzata: 50 minuti prima della partita
+            const regDeadlineForced = new Date(matchDateTime);
+            regDeadlineForced.setMinutes(regDeadlineForced.getMinutes() - 50);
+
+            // Deadline voti: 3 giorni dopo a mezzanotte
+            const votingDeadline = new Date(matchDateTime);
+            votingDeadline.setDate(votingDeadline.getDate() + 3);
+            votingDeadline.setHours(23, 59, 59, 999);
+
+            await storage.createMatch({
+                date: matchDateTime.toISOString(),
+                location: newMatchLocation,
+                maxPlayers: parseInt(newMatchMaxPlayers),
+                registrationDeadlineDisplay: regDeadlineDisplay.toISOString(),
+                registrationDeadlineForced: regDeadlineForced.toISOString(),
+                votingDeadline: votingDeadline.toISOString()
+            });
+
+            // Reset form
+            setNewMatchDate('');
+            setNewMatchTime('21:20');
+            setNewMatchLocation('Campo SuperSantos, Portici');
+            setNewMatchMaxPlayers(18);
+            setShowCreateMatch(false);
+
+            showSuccessMsg('Partita creata!');
+            await loadAdminMatches();
+        } catch (error) {
+            console.error('Errore creazione partita:', error);
+            alert('Errore durante la creazione della partita');
         }
     };
 
+    const handleCloseRegistrations = async (matchId) => {
+        if (!confirm('Chiudere le iscrizioni? I giocatori non potranno più iscriversi.')) return;
+
+        try {
+            await storage.updateMatch(matchId, {
+                status: 'CLOSED',
+                manualOverride: false,
+                manualOverrideUntil: null
+            });
+            showSuccessMsg('Iscrizioni chiuse!');
+            await loadAdminMatches();
+        } catch (error) {
+            console.error('Errore chiusura iscrizioni:', error);
+            alert('Errore durante la chiusura');
+        }
+    };
+
+    const handleReopenRegistrations = async (matchId) => {
+        const match = adminMatches.find(m => m.id === matchId);
+        if (!match) return;
+
+        let confirmMessage = '';
+        let resetData = {};
+
+        if (match.status === 'CLOSED') {
+            console.log('🟡 Caso rilevato: CLOSED');
+            confirmMessage = 'Riaprire le iscrizioni? Le squadre NON verranno cancellate.';
+            resetData = {
+                status: 'OPEN',
+                manualOverride: true,
+                manualOverrideUntil: Date.now() + (2 * 60 * 60 * 1000)
+            };
+        } else if (match.status === 'VOTING') {
+            console.log('🟡 Caso rilevato: VOTING');
+            confirmMessage = '⚠️ Tornare alle iscrizioni? ATTENZIONE: Le squadre e i voti verranno cancellati!';
+            resetData = {
+                status: 'OPEN',
+                teams: { gialli: [], verdi: [] },
+                score: null,
+                topScorer: null,
+                topScorerGoals: null,
+                manualOverride: true,
+                manualOverrideUntil: Date.now() + (2 * 60 * 60 * 1000)
+            };
+        } else if (match.status === 'COMPLETED') {
+            console.log('🟡 Caso rilevato: COMPLETED');
+            confirmMessage = '⚠️ Riaprire la partita? ATTENZIONE: Risultato e voti verranno cancellati!';
+            resetData = {
+                status: 'OPEN',
+                teams: { gialli: [], verdi: [] },
+                score: { gialli: 0, verdi: 0 },
+                topScorer: null,
+                topScorerGoals: null,
+                manualOverride: true,
+                manualOverrideUntil: Date.now() + (2 * 60 * 60 * 1000)
+            };
+        }
+
+        if (!confirm(confirmMessage)) return;
+
+        try {
+            // Se è VOTING o COMPLETED, cancella i voti
+            if (match.status === 'VOTING' || match.status === 'COMPLETED') {
+                const votesRef = collection(db, 'matches', matchId, 'match_votes');
+                const votesSnapshot = await getDocs(votesRef);
+
+                const batch = writeBatch(db);
+                votesSnapshot.docs.forEach(docSnap => {
+                    batch.delete(doc(db, 'matches', matchId, 'match_votes', docSnap.id));
+                });
+                await batch.commit();
+            }
+
+            await storage.updateMatch(matchId, resetData);
+            await loadAdminMatches();
+            showSuccessMsg('✅ Partita riaperta!');
+        } catch (error) {
+            console.error('Errore:', error);
+            alert('Errore durante la riapertura');
+        }
+    };
+
+    const handleEditMaxPlayers = (matchId, currentMax) => {
+        setEditingMaxPlayers(matchId);
+        setNewMaxPlayers(currentMax.toString());
+    };
+
+    const handleSaveMaxPlayers = async (matchId) => {
+        const maxPlayers = parseInt(newMaxPlayers);
+
+        if (isNaN(maxPlayers) || maxPlayers < 10 || maxPlayers > 20 || maxPlayers % 2 !== 0) {
+            alert('Il numero deve essere pari e compreso tra 10 e 20 (10, 12, 14, 16, 18, 20)');
+            return;
+        }
+
+        try {
+            await storage.updateMatch(matchId, { maxPlayers: maxPlayers });
+            setEditingMaxPlayers(null);
+            setNewMaxPlayers('');
+            showSuccessMsg('Numero massimo aggiornato!');
+            await loadAdminMatches();
+        } catch (error) {
+            console.error('Errore aggiornamento max players:', error);
+            alert('Errore durante l\'aggiornamento');
+        }
+    };
+
+    const handleDeleteMatch = async (matchId) => {
+        if (!confirm('⚠️ ATTENZIONE: Eliminare questa partita e tutte le iscrizioni?')) return;
+        if (!confirm('Conferma: sei sicuro di voler eliminare tutto?')) return;
+
+        try {
+            await storage.deleteMatch(matchId);
+            showSuccessMsg('Partita eliminata!');
+            await loadAdminMatches();
+        } catch (error) {
+            console.error('Errore eliminazione partita:', error);
+            alert('Errore durante l\'eliminazione');
+        }
+    };
+
+    const handleOpenTeamAssignment = async (matchId) => {
+        const match = adminMatches.find(m => m.id === matchId);
+        const regs = adminRegistrations[matchId] || [];
+
+        if (regs.length < 2) {
+            alert('Servono almeno 2 giocatori iscritti per assegnare le squadre');
+            return;
+        }
+
+        setSelectedMatchForTeams(match);
+
+        if (match.teams && match.teams.gialli && match.teams.gialli.length > 0) {
+            setTeamGialli(match.teams.gialli);
+            setTeamVerdi(match.teams.verdi);
+        } else {
+            generateBalancedTeams(regs);
+        }
+
+        setShowTeamAssignment(true);
+    };
+
+    const generateBalancedTeams = (registrations) => {
+        const playersWithData = registrations.map(reg => {
+            const userData = users.find(u => u.id === reg.playerId);
+            const averages = utils.calculateAverages(reg.playerId, votes, userData);
+            const overall = utils.calculateOverall(averages) || 2.5;
+
+            return {
+                ...reg,
+                overall: overall,
+                preferredRole: userData?.preferredRole || null,
+                otherRoles: userData?.otherRoles || []
+            };
+        });
+
+        const goalkeepers = playersWithData.filter(p => p.isGoalkeeper);
+        const fieldPlayers = playersWithData.filter(p => !p.isGoalkeeper);
+        const sortedPlayers = [...fieldPlayers].sort((a, b) => b.overall - a.overall);
+
+        let gialli = [];
+        let verdi = [];
+
+        if (goalkeepers.length >= 2) {
+            const sortedGK = [...goalkeepers].sort((a, b) => b.overall - a.overall);
+            gialli.push(sortedGK[0]);
+            verdi.push(sortedGK[1]);
+            for (let i = 2; i < sortedGK.length; i++) {
+                if (i % 2 === 0) gialli.push(sortedGK[i]);
+                else verdi.push(sortedGK[i]);
+            }
+        } else if (goalkeepers.length === 1) {
+            gialli.push(goalkeepers[0]);
+        }
+
+        let teamIndex = 0;
+        let direction = 1;
+
+        for (let i = 0; i < sortedPlayers.length; i++) {
+            if (teamIndex === 0) {
+                gialli.push(sortedPlayers[i]);
+            } else {
+                verdi.push(sortedPlayers[i]);
+            }
+
+            teamIndex += direction;
+
+            if (teamIndex > 1) {
+                teamIndex = 1;
+                direction = -1;
+            } else if (teamIndex < 0) {
+                teamIndex = 0;
+                direction = 1;
+            }
+        }
+
+        while (Math.abs(gialli.length - verdi.length) > 1) {
+            if (gialli.length > verdi.length) {
+                const weakest = gialli.reduce((min, p) => p.overall < min.overall ? p : min);
+                gialli = gialli.filter(p => p.playerId !== weakest.playerId);
+                verdi.push(weakest);
+            } else {
+                const weakest = verdi.reduce((min, p) => p.overall < min.overall ? p : min);
+                verdi = verdi.filter(p => p.playerId !== weakest.playerId);
+                gialli.push(weakest);
+            }
+        }
+
+        setTeamGialli(gialli);
+        setTeamVerdi(verdi);
+    };
+
+    const calculateTeamStats = (team) => {
+        if (!team || team.length === 0) return { avgOverall: 0, totalOverall: 0, goalkeepers: 0 };
+
+        const totalOverall = team.reduce((sum, p) => {
+            const userData = users.find(u => u.id === p.playerId);
+            const averages = utils.calculateAverages(p.playerId, votes, userData);
+            const overall = utils.calculateOverall(averages) || 2.5;
+            return sum + overall;
+        }, 0);
+
+        const avgOverall = totalOverall / team.length;
+        const goalkeepers = team.filter(p => p.isGoalkeeper).length;
+
+        return {
+            avgOverall: avgOverall,
+            totalOverall: totalOverall,
+            goalkeepers: goalkeepers,
+            count: team.length
+        };
+    };
+
+    const movePlayerToTeam = (player, fromTeam, toTeam) => {
+        if (fromTeam === 'gialli') {
+            setTeamGialli(teamGialli.filter(p => p.playerId !== player.playerId));
+            setTeamVerdi([...teamVerdi, player]);
+        } else {
+            setTeamVerdi(teamVerdi.filter(p => p.playerId !== player.playerId));
+            setTeamGialli([...teamGialli, player]);
+        }
+    };
+
+    const handleSaveTeams = async () => {
+        if (teamGialli.length === 0 || teamVerdi.length === 0) {
+            alert('Entrambe le squadre devono avere almeno un giocatore');
+            return;
+        }
+
+        console.log('💾 Salvataggio squadre...');
+        console.log('Match ID:', selectedMatchForTeams.id);
+        console.log('Gialli:', teamGialli);
+        console.log('Verdi:', teamVerdi);
+
+        try {
+            const teamsData = {
+                gialli: teamGialli,
+                verdi: teamVerdi
+            };
+
+            console.log('📤 Invio dati:', teamsData);
+
+            await storage.updateMatch(selectedMatchForTeams.id, {
+                teams: teamsData
+            });
+
+            console.log('✅ Squadre salvate con successo!');
+
+            showSuccessMsg('Squadre assegnate!');
+            setShowTeamAssignment(false);
+            setSelectedMatchForTeams(null);
+            setTeamGialli([]);
+            setTeamVerdi([]);
+            await loadAdminMatches();
+        } catch (error) {
+            console.error('❌ Errore salvataggio squadre:', error);
+            alert('Errore durante il salvataggio: ' + error.message);
+        }
+    };
+
+    const handleOpenScoreModal = (matchId) => {
+        const match = adminMatches.find(m => m.id === matchId);
+
+        if (!match) {
+            console.error('❌ Match non trovato!');
+            alert('❌ Errore: Partita non trovata!');
+            return;
+        }
+
+        if (!match.teams || !match.teams.gialli || match.teams.gialli.length === 0) {
+            console.error('❌ Squadre non assegnate correttamente!');
+            alert('❌ Devi prima assegnare le squadre!');
+            return;
+        }
+
+        console.log('✅ Squadre OK, apro modal...');
+        setSelectedMatchForScore(match);
+
+        if (match.score && typeof match.score.gialli !== 'undefined' && typeof match.score.verdi !== 'undefined') {
+            console.log('✅ Carico score esistente:', match.score);
+            setScoreGialli(match.score.gialli.toString());
+            setScoreVerdi(match.score.verdi.toString());
+        } else {
+            console.log('ℹ️ Nessuno score da caricare, inizializzo vuoto');
+            setScoreGialli('');
+            setScoreVerdi('');
+        }
+
+        if (match.topScorer) {
+            console.log('✅ Carico topScorer esistente:', match.topScorer);
+            setTopScorer(match.topScorer);
+            setTopScorerGoals(match.topScorerGoals?.toString() || '');
+        } else {
+            console.log('ℹ️ Nessun topScorer da caricare');
+            setTopScorer('');
+            setTopScorerGoals('');
+        }
+
+        console.log('✅ Apro modal risultato');
+        setShowScoreModal(true);
+    };
+
+    const handleSaveScore = async () => {
+        if (!scoreGialli || !scoreVerdi) {
+            alert('Inserisci entrambi i punteggi');
+            return;
+        }
+
+        const gialliScore = parseInt(scoreGialli);
+        const verdiScore = parseInt(scoreVerdi);
+
+        if (isNaN(gialliScore) || isNaN(verdiScore) || gialliScore < 0 || verdiScore < 0) {
+            alert('Inserisci punteggi validi');
+            return;
+        }
+
+        try {
+            const updates = {
+                score: {
+                    gialli: gialliScore,
+                    verdi: verdiScore
+                }
+            };
+
+            if (topScorer && topScorerGoals) {
+                updates.topScorer = topScorer;
+                updates.topScorerGoals = parseInt(topScorerGoals);
+            }
+
+            await storage.updateMatch(selectedMatchForScore.id, updates);
+
+            showSuccessMsg('Risultato salvato!');
+            setShowScoreModal(false);
+            setSelectedMatchForScore(null);
+            setScoreGialli('');
+            setScoreVerdi('');
+            setTopScorer('');
+            setTopScorerGoals('');
+            await loadAdminMatches();
+        } catch (error) {
+            console.error('Errore salvataggio risultato:', error);
+            alert('Errore durante il salvataggio');
+        }
+    };
+
+    const showSuccessMsg = (msg) => {
+        setSuccessMessage(msg);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+    };
+
+    const handleEditName = (player) => {
+        setEditingPlayer(player.id);
+        setEditName(player.name);
+    };
+
+    const handleSaveName = async (playerId) => {
+        if (!editName.trim()) return;
+        const updatedUser = users.find(u => u.id === playerId);
+        updatedUser.name = editName.trim();
+        await storage.updateUser(updatedUser);
+        const updatedUsers = users.map(u => u.id === playerId ? updatedUser : u);
+        setUsers(updatedUsers);
+        setEditingPlayer(null);
+        setEditName('');
+        showSuccessMsg('Nome aggiornato!');
+    };
+
+    const handleDeletePlayer = async (playerId) => {
+        if (!confirm('Eliminare questo giocatore e tutte le sue valutazioni?')) return;
+        const updatedUsers = users.filter(u => u.id !== playerId);
+        setUsers(updatedUsers);
+        await storage.setUsers(updatedUsers);
+        showSuccessMsg('Giocatore eliminato!');
+    };
+
+    const handleEditVotes = (player) => {
+        const averages = utils.calculateAverages(player.id, votes, player);
+        if (averages) {
+            const values = {};
+            Object.keys(averages).forEach(k => { values[k] = averages[k].toFixed(2); });
+            setVoteValues(values);
+        } else {
+            const emptyValues = {};
+            [...SKILLS.tecniche, ...SKILLS.tattiche, ...SKILLS.fisiche].forEach(skill => { emptyValues[skill] = ''; });
+            setVoteValues(emptyValues);
+        }
+        setEditingVotes(player);
+    };
+
+    const handleSaveVotes = async () => {
+        for (let i = 0; i < 8; i++) {
+            const seedVote = {
+                voterId: `seed_admin_${i}_${Date.now()}`,
+                playerId: editingVotes.id,
+                ratings: {},
+                timestamp: Date.now()
+            };
+            [...SKILLS.tecniche, ...SKILLS.tattiche, ...SKILLS.fisiche].forEach(skill => {
+                const value = parseFloat(voteValues[skill]);
+                if (!isNaN(value)) seedVote.ratings[skill] = Math.round(value);
+            });
+            await storage.addVote(seedVote);
+        }
+        setEditingVotes(null);
+        setVoteValues({});
+        showSuccessMsg('Valutazioni aggiornate!');
+        setTimeout(() => window.location.reload(), 1000);
+    };
+
+    const handleAddPlayer = async () => {
+        const newName = prompt('Nome del nuovo giocatore:');
+        if (!newName || !newName.trim()) return;
+        const newPlayer = { id: `player${Date.now()}`, name: newName.trim(), avatar: null, preferredRole: null, otherRoles: [], email: null, claimed: false, isAdmin: false };
+        await storage.updateUser(newPlayer);
+        setUsers([...users, newPlayer]);
+        showSuccessMsg('Giocatore aggiunto!');
+    };
+
+    const handleFullReset = () => {
+        if (!confirm('⚠️ ATTENZIONE: Eliminare TUTTI i dati?')) return;
+        if (!confirm('Conferma: vuoi davvero cancellare tutto?')) return;
+        storage.clearAll();
+        window.location.reload();
+    };
     return (
-        <div className="admin-page">
-            <h2>🛡️ Pannello di Amministrazione</h2>
+        <div className="section-container">
+            <div className="section-header">
+                <h2>🔧 Pannello Amministratore</h2>
+            </div>
 
-            {message && <div className={`form-message ${message.type}`}>{message.text}</div>}
-            {error && <div className="error-message">{error}</div>}
+            {showSuccess && <div className="success-message">✓ {successMessage}</div>}
 
-            <h3 className="section-title">Gestione Utenti e Ruoli</h3>
-            <div className="user-management-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Email</th>
-                            <th>Ruolo</th>
-                            <th>Admin</th>
-                            <th>Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.sort((a, b) => (b.isAdmin || false) - (a.isAdmin || false)).map(u => (
-                            <tr key={u.id}>
-                                <td>{u.nickname || u.displayName || u.name}</td>
-                                <td>{u.email}</td>
-                                <td>{u.role || 'N/D'}</td>
-                                <td>
-                                    <span className={`admin-status ${u.isAdmin ? 'is-admin' : 'is-user'}`}>
-                                        {u.isAdmin ? 'SI' : 'NO'}
+            <div className="settings-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h3>🏆 Gestione Partite</h3>
+                    <button className="btn btn-primary" onClick={() => setShowCreateMatch(!showCreateMatch)}>
+                        {showCreateMatch ? '✕ Annulla' : '+ Crea Partita'}
+                    </button>
+                </div>
+
+                {showCreateMatch && (
+                    <div className="admin-create-match">
+                        <h4>Crea Nuova Partita</h4>
+
+                        <div className="form-group">
+                            <label>Data Partita *</label>
+                            <input
+                                type="date"
+                                value={newMatchDate}
+                                onChange={(e) => setNewMatchDate(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Orario *</label>
+                            <input
+                                type="time"
+                                value={newMatchTime}
+                                onChange={(e) => setNewMatchTime(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Location *</label>
+                            <input
+                                type="text"
+                                value={newMatchLocation}
+                                onChange={(e) => setNewMatchLocation(e.target.value)}
+                                placeholder="Es: Campo SuperSantos, Portici"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Max Giocatori (numero pari: 10, 12, 14, 16, 18, 20)</label>
+                            <select
+                                value={newMatchMaxPlayers}
+                                onChange={(e) => setNewMatchMaxPlayers(e.target.value)}
+                            >
+                                <option value="10">10 giocatori (5 vs 5)</option>
+                                <option value="12">12 giocatori (6 vs 6)</option>
+                                <option value="14">14 giocatori (7 vs 7)</option>
+                                <option value="16">16 giocatori (8 vs 8)</option>
+                                <option value="18">18 giocatori (9 vs 9)</option>
+                                <option value="20">20 giocatori (10 vs 10)</option>
+                            </select>
+                        </div>
+
+                        <button
+                            className="btn btn-primary"
+                            onClick={handleCreateMatch}
+                            disabled={!newMatchDate || !newMatchTime || !newMatchLocation}
+                        >
+                            ✓ Crea Partita
+                        </button>
+                    </div>
+                )}
+
+                <div className="admin-matches-list">
+                    {adminMatches.map(match => {
+                        const regs = adminRegistrations[match.id] || [];
+                        return (
+                            <div key={match.id} className="admin-match-item">
+                                <div className="admin-match-header">
+                                    <span className={`match-status ${match.status.toLowerCase()}`}>
+                                        {match.status === 'OPEN' && '📝 APERTA'}
+                                        {match.status === 'CLOSED' && '🔒 CHIUSA'}
+                                        {match.status === 'VOTING' && '⭐ VOTAZIONI'}
+                                        {match.status === 'COMPLETED' && '✅ FINITA'}
                                     </span>
-                                </td>
-                                <td>
+                                    <span className="admin-match-date">{utils.formatMatchDate(match.date)}</span>
+                                </div>
+
+                                <div className="admin-match-info">
+                                    <span>📍 {match.location}</span>
+                                    {editingMaxPlayers === match.id ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span>👥</span>
+                                            <select
+                                                value={newMaxPlayers}
+                                                onChange={(e) => setNewMaxPlayers(e.target.value)}
+                                                style={{
+                                                    background: 'var(--bg-deep)',
+                                                    color: 'white',
+                                                    border: '1px solid var(--volt)',
+                                                    padding: '4px 8px',
+                                                    borderRadius: '4px',
+                                                    fontSize: '13px'
+                                                }}
+                                            >
+                                                <option value="10">10</option>
+                                                <option value="12">12</option>
+                                                <option value="14">14</option>
+                                                <option value="16">16</option>
+                                                <option value="18">18</option>
+                                                <option value="20">20</option>
+                                            </select>
+                                            <button
+                                                onClick={() => handleSaveMaxPlayers(match.id)}
+                                                style={{
+                                                    background: '#48bb78',
+                                                    border: 'none',
+                                                    padding: '4px 8px',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    color: 'white',
+                                                    fontSize: '12px'
+                                                }}
+                                            >
+                                                ✓
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setEditingMaxPlayers(null);
+                                                    setNewMaxPlayers('');
+                                                }}
+                                                style={{
+                                                    background: '#718096',
+                                                    border: 'none',
+                                                    padding: '4px 8px',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    color: 'white',
+                                                    fontSize: '12px'
+                                                }}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <span
+                                            onClick={() => handleEditMaxPlayers(match.id, match.maxPlayers)}
+                                            style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                            title="Click per modificare"
+                                        >
+                                            👥 {regs.length}/{match.maxPlayers}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="admin-match-actions">
+                                    {match.status === 'OPEN' && (
+                                        <button
+                                            className="admin-action-btn close"
+                                            onClick={() => handleCloseRegistrations(match.id)}
+                                        >
+                                            🔒 Chiudi Iscrizioni
+                                        </button>
+                                    )}
+                                    {match.status === 'CLOSED' && (
+                                        <>
+                                            <button
+                                                className="admin-action-btn reopen"
+                                                onClick={() => handleReopenRegistrations(match.id)}
+                                            >
+                                                🔓 Riapri Iscrizioni
+                                            </button>
+                                            <button
+                                                className="admin-action-btn assign"
+                                                onClick={() => handleOpenTeamAssignment(match.id)}
+                                            >
+                                                👥 Assegna Squadre
+                                            </button>
+                                            <button
+                                                className="admin-action-btn score"
+                                                onClick={() => handleOpenScoreModal(match.id)}
+                                            >
+                                                ⚽ Inserisci Risultato
+                                            </button>
+                                        </>
+                                    )}
+                                    {match.status === 'VOTING' && (
+                                        <>
+                                            <button
+                                                className="admin-action-btn reopen"
+                                                onClick={() => handleReopenRegistrations(match.id)}
+                                            >
+                                                🔙 Torna a Iscrizioni
+                                            </button>
+                                            <button
+                                                className="admin-action-btn score"
+                                                onClick={() => handleOpenScoreModal(match.id)}
+                                            >
+                                                ⚽ Inserisci Risultato
+                                            </button>
+                                        </>
+                                    )}
+                                    {match.status === 'COMPLETED' && (
+                                        <button
+                                            className="admin-action-btn reopen"
+                                            onClick={() => handleReopenRegistrations(match.id)}
+                                        >
+                                            🔙 Riapri Partita
+                                        </button>
+                                    )}
                                     <button
-                                        className={`button tiny-button ${u.isAdmin ? 'secondary' : 'primary'}`}
-                                        onClick={() => handleToggleAdmin(u)}
-                                        disabled={loading || u.id === storage.getCurrentUser().id}
+                                        className="admin-action-btn delete"
+                                        onClick={() => handleDeleteMatch(match.id)}
                                     >
-                                        {u.isAdmin ? 'Degrada' : 'Promuovi Admin'}
+                                        🗑️ Elimina
                                     </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
-            <h3 className="section-title">Manutenzione Dati</h3>
-            <div className="maintenance-tools">
-                <button
-                    className="button red"
-                    onClick={handleRecalculateRatings}
-                    disabled={loading}
-                >
-                    🔄 Ricalcola Tutti i Rating
-                </button>
-                <p className="admin-tip">Usare con cautela. Forza il ricalcolo globale di tutte le statistiche.</p>
+            <div className="settings-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h3 style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => setShowPlayersList(!showPlayersList)}>
+                        {showPlayersList ? '▼' : '▶'} 👥 Gestione Giocatori ({users.filter(u => !u.id.startsWith('seed')).length})
+                    </h3>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        {showPlayersList && <button className="btn btn-primary" onClick={handleAddPlayer}>+ Aggiungi</button>}
+                        <button className="btn btn-secondary" onClick={() => setShowPlayersList(!showPlayersList)}>
+                            {showPlayersList ? 'Comprimi' : 'Espandi'}
+                        </button>
+                    </div>
+                </div>
+
+                {showPlayersList && (
+                    <div className="admin-player-list">
+                        {users.filter(u => !u.id.startsWith('seed')).map((player, index) => {
+                            const voteCount = utils.countVotes(player.id, votes);
+                            const averages = utils.calculateAverages(player.id, votes);
+                            const overall = utils.calculateOverall(averages);
+
+                            return (
+                                <div key={player.id} className="admin-player-item">
+                                    <span style={{ color: '#a0aec0', width: '25px' }}>{index + 1}.</span>
+
+                                    {editingPlayer === player.id ? (
+                                        <div style={{ display: 'flex', gap: '10px', flex: 1 }}>
+                                            <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="admin-input" autoFocus />
+                                            <button onClick={() => handleSaveName(player.id)} className="admin-btn btn-save">✓</button>
+                                            <button onClick={() => setEditingPlayer(null)} className="admin-btn btn-cancel">✕</button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <span style={{ fontWeight: '600', minWidth: '140px' }}>{player.name}</span>
+                                            <span style={{ color: '#718096', fontSize: '13px', flex: 1 }}>{player.claimed ? `✓ ${player.email}` : '○ Non reclamato'}</span>
+                                            <span style={{ color: '#667eea', fontSize: '13px' }}>OVR: {overall ? utils.toBase10(overall).toFixed(2) : '-'} ({voteCount} voti)</span>
+                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                                <button onClick={() => handleEditName(player)} className="admin-btn">✏️</button>
+                                                <button onClick={() => handleEditVotes(player)} className="admin-btn btn-chart">📊</button>
+                                                <button onClick={() => handleDeletePlayer(player.id)} className="admin-btn btn-delete">🗑️</button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
+
+            <div className="settings-group">
+                <h3>💾 Backup Database</h3>
+                <p>Esporta o importa tutti i dati (utenti e voti) per fare backup o ripristinare</p>
+                <div style={{ display: 'flex', gap: '15px', marginTop: '15px' }}>
+                    <button className="btn btn-primary" onClick={() => {
+                        const data = { users, votes, timestamp: Date.now(), date: new Date().toISOString() };
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `calcetto_backup_${new Date().toISOString().split('T')[0]}.json`;
+                        a.click();
+                        showSuccessMsg('Backup esportato!');
+                    }}>📥 Esporta Backup</button>
+                    <button className="btn btn-secondary" onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.json';
+                        input.onchange = async (e) => {
+                            try {
+                                const file = e.target.files[0];
+                                const text = await file.text();
+                                const data = JSON.parse(text);
+                                if (!confirm('⚠️ ATTENZIONE: Questo sovrascriverà tutti i dati attuali. Continuare?')) return;
+                                if (data.users) await storage.setUsers(data.users);
+                                if (data.votes) await storage.setVotes(data.votes);
+                                showSuccessMsg('Backup importato!');
+                                setTimeout(() => window.location.reload(), 1000);
+                            } catch (err) {
+                                alert('Errore durante l\'importazione: ' + err.message);
+                            }
+                        };
+                        input.click();
+                    }}>📤 Importa Backup</button>
+                </div>
+            </div>
+
+            <div className="settings-group admin-danger-zone">
+                <h3>⚠️ Zona Pericolosa</h3>
+                <p>Azioni irreversibili!</p>
+                <button className="btn btn-danger" onClick={handleFullReset}>🗑️ Reset Completo</button>
+            </div>
+
+            {editingVotes && (
+                <div className="modal-overlay">
+                    <div className="modal-content modal-large">
+                        <h2>📊 Modifica: {editingVotes.name}</h2>
+                        <p>Inserisci valori 1-4. Verranno creati 8 voti seed.</p>
+                        {['tecniche', 'tattiche', 'fisiche'].map(category => (
+                            <div key={category} className="vote-edit-category">
+                                <h4 className={`category-${category}`}>{category}</h4>
+                                <div className="vote-edit-grid">
+                                    {SKILLS[category].map(skill => (
+                                        <div key={skill} className="vote-edit-item">
+                                            <label>{skill}</label>
+                                            <input type="number" min="1" max="4" step="0.01" value={voteValues[skill] || ''} onChange={(e) => setVoteValues({ ...voteValues, [skill]: e.target.value })} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                        <div className="modal-actions">
+                            <button className="btn btn-secondary" onClick={() => setEditingVotes(null)}>Annulla</button>
+                            <button className="btn btn-primary" onClick={handleSaveVotes}>Salva</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showTeamAssignment && selectedMatchForTeams && (
+                <div className="modal-overlay">
+                    <div className="modal-content modal-large">
+                        <h2>👥 Assegna Squadre - {utils.formatMatchDate(selectedMatchForTeams.date)}</h2>
+                        <p>Trascina i giocatori tra le squadre o usa il bilanciamento automatico</p>
+
+                        {teamGialli.length > 0 && teamVerdi.length > 0 && (
+                            <div style={{
+                                background: 'rgba(210, 248, 0, 0.1)',
+                                border: '1px solid rgba(210, 248, 0, 0.3)',
+                                borderRadius: '8px',
+                                padding: '15px',
+                                marginTop: '20px',
+                                marginBottom: '10px'
+                            }}>
+                                <h4 style={{ color: 'var(--volt)', marginBottom: '15px', textAlign: 'center' }}>
+                                    📊 Statistiche Bilanciamento
+                                </h4>
+                                <div style={{ display: 'flex', gap: '30px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                    {(() => {
+                                        const gialliStats = calculateTeamStats(teamGialli);
+                                        const verdiStats = calculateTeamStats(teamVerdi);
+                                        const diff = Math.abs(gialliStats.avgOverall - verdiStats.avgOverall);
+                                        const isBalanced = diff < 0.3;
+
+                                        return (
+                                            <>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '5px' }}>GIALLI</div>
+                                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFD700' }}>
+                                                        {utils.toBase10(gialliStats.avgOverall).toFixed(2)}
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', color: '#a0aec0', marginTop: '3px' }}>
+                                                        {gialliStats.count} giocatori | {gialliStats.goalkeepers} 🧤
+                                                    </div>
+                                                </div>
+
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    gap: '5px'
+                                                }}>
+                                                    <div style={{ fontSize: '18px' }}>⚖️</div>
+                                                    <div style={{
+                                                        fontSize: '12px',
+                                                        fontWeight: 'bold',
+                                                        color: isBalanced ? '#48bb78' : '#f59e0b',
+                                                        padding: '4px 10px',
+                                                        background: isBalanced ? 'rgba(72, 187, 120, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                                        borderRadius: '12px'
+                                                    }}>
+                                                        {isBalanced ? '✓ BILANCIATE' : `Δ ${utils.toBase10(diff).toFixed(2)}`}
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '5px' }}>VERDI</div>
+                                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#48bb78' }}>
+                                                        {utils.toBase10(verdiStats.avgOverall).toFixed(2)}
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', color: '#a0aec0', marginTop: '3px' }}>
+                                                        {verdiStats.count} giocatori | {verdiStats.goalkeepers} 🧤
+                                                    </div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+                            <div style={{ flex: 1, background: 'rgba(255, 215, 0, 0.1)', padding: '15px', borderRadius: '8px', border: '2px solid #FFD700' }}>
+                                <h3 style={{ color: '#FFD700', marginBottom: '15px' }}>
+                                    🟡 GIALLI ({teamGialli.length})
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {teamGialli.map(player => {
+                                        const userData = users.find(u => u.id === player.playerId);
+                                        const averages = utils.calculateAverages(player.playerId, votes, userData);
+                                        const overall = utils.calculateOverall(averages) || 2.5;
+
+                                        return (
+                                            <div
+                                                key={player.playerId}
+                                                style={{
+                                                    background: 'rgba(255, 255, 255, 0.05)',
+                                                    padding: '10px',
+                                                    borderRadius: '4px',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <span style={{
+                                                        background: 'rgba(255, 215, 0, 0.2)',
+                                                        padding: '2px 8px',
+                                                        borderRadius: '4px',
+                                                        fontSize: '12px',
+                                                        fontWeight: 'bold',
+                                                        color: '#FFD700',
+                                                        minWidth: '40px',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        {utils.toBase10(overall).toFixed(1)}
+                                                    </span>
+                                                    <span>
+                                                        {player.playerName}
+                                                        {player.isGoalkeeper && ' 🧤'}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={() => movePlayerToTeam(player, 'gialli', 'verdi')}
+                                                    style={{
+                                                        background: '#48bb78',
+                                                        border: 'none',
+                                                        padding: '4px 12px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '12px',
+                                                        color: 'white'
+                                                    }}
+                                                >
+                                                    → VERDI
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                    {teamGialli.length === 0 && (
+                                        <p style={{ textAlign: 'center', opacity: 0.5 }}>Nessun giocatore</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div style={{ flex: 1, background: 'rgba(72, 187, 120, 0.1)', padding: '15px', borderRadius: '8px', border: '2px solid #48bb78' }}>
+                                <h3 style={{ color: '#48bb78', marginBottom: '15px' }}>
+                                    🟢 VERDI ({teamVerdi.length})
+                                </h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {teamVerdi.map(player => {
+                                        const userData = users.find(u => u.id === player.playerId);
+                                        const averages = utils.calculateAverages(player.playerId, votes, userData);
+                                        const overall = utils.calculateOverall(averages) || 2.5;
+
+                                        return (
+                                            <div
+                                                key={player.playerId}
+                                                style={{
+                                                    background: 'rgba(255, 255, 255, 0.05)',
+                                                    padding: '10px',
+                                                    borderRadius: '4px',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <span style={{
+                                                        background: 'rgba(72, 187, 120, 0.2)',
+                                                        padding: '2px 8px',
+                                                        borderRadius: '4px',
+                                                        fontSize: '12px',
+                                                        fontWeight: 'bold',
+                                                        color: '#48bb78',
+                                                        minWidth: '40px',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        {utils.toBase10(overall).toFixed(1)}
+                                                    </span>
+                                                    <span>
+                                                        {player.playerName}
+                                                        {player.isGoalkeeper && ' 🧤'}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={() => movePlayerToTeam(player, 'verdi', 'gialli')}
+                                                    style={{
+                                                        background: '#FFD700',
+                                                        border: 'none',
+                                                        padding: '4px 12px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '12px',
+                                                        color: 'black'
+                                                    }}
+                                                >
+                                                    ← GIALLI
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                    {teamVerdi.length === 0 && (
+                                        <p style={{ textAlign: 'center', opacity: 0.5 }}>Nessun giocatore</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => generateBalancedTeams(adminRegistrations[selectedMatchForTeams.id] || [])}
+                                style={{ marginRight: '10px' }}
+                            >
+                                🔄 Bilancia Automaticamente
+                            </button>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button className="btn btn-secondary" onClick={() => {
+                                setShowTeamAssignment(false);
+                                setSelectedMatchForTeams(null);
+                                setTeamGialli([]);
+                                setTeamVerdi([]);
+                            }}>
+                                Annulla
+                            </button>
+                            <button className="btn btn-primary" onClick={handleSaveTeams}>
+                                ✓ Salva Squadre
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showScoreModal && selectedMatchForScore && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h2>⚽ Inserisci Risultato - {utils.formatMatchDate(selectedMatchForScore.date)}</h2>
+
+                        <div style={{ display: 'flex', gap: '20px', marginTop: '20px', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <label style={{ display: 'block', color: '#FFD700', marginBottom: '8px', fontWeight: 'bold' }}>
+                                    🟡 GIALLI
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={scoreGialli}
+                                    onChange={(e) => setScoreGialli(e.target.value)}
+                                    style={{
+                                        width: '80px',
+                                        height: '60px',
+                                        fontSize: '28px',
+                                        textAlign: 'center',
+                                        background: 'var(--bg-deep)',
+                                        border: '2px solid #FFD700',
+                                        color: 'white',
+                                        borderRadius: '8px'
+                                    }}
+                                />
+                            </div>
+
+                            <span style={{ fontSize: '32px', fontWeight: 'bold' }}>-</span>
+
+                            <div style={{ textAlign: 'center' }}>
+                                <label style={{ display: 'block', color: '#48bb78', marginBottom: '8px', fontWeight: 'bold' }}>
+                                    🟢 VERDI
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={scoreVerdi}
+                                    onChange={(e) => setScoreVerdi(e.target.value)}
+                                    style={{
+                                        width: '80px',
+                                        height: '60px',
+                                        fontSize: '28px',
+                                        textAlign: 'center',
+                                        background: 'var(--bg-deep)',
+                                        border: '2px solid #48bb78',
+                                        color: 'white',
+                                        borderRadius: '8px'
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '30px' }}>
+                            <h4 style={{ marginBottom: '15px', color: 'var(--volt)' }}>🏆 Capocannoniere (opzionale)</h4>
+                            <div className="form-group">
+                                <label>Nome Giocatore</label>
+                                <input
+                                    type="text"
+                                    value={topScorer}
+                                    onChange={(e) => setTopScorer(e.target.value)}
+                                    placeholder="Es: Mario Rossi"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Numero Gol</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={topScorerGoals}
+                                    onChange={(e) => setTopScorerGoals(e.target.value)}
+                                    placeholder="Es: 3"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button className="btn btn-secondary" onClick={() => {
+                                setShowScoreModal(false);
+                                setSelectedMatchForScore(null);
+                                setScoreGialli('');
+                                setScoreVerdi('');
+                                setTopScorer('');
+                                setTopScorerGoals('');
+                            }}>
+                                Annulla
+                            </button>
+                            <button className="btn btn-primary" onClick={handleSaveScore}>
+                                ✓ Salva Risultato
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -204,7 +1344,7 @@ export function AdminPage({ users, setUsers, votes, setVotes }) {
 // 3. DEBUG PAGE (Analisi Voti)
 // =========================================================================
 
-export function DebugPage({ users, votes }) {
+function DebugPage({ users, votes }) {
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [editingVote, setEditingVote] = useState(null);
     const [editVoteValues, setEditVoteValues] = useState({});
@@ -227,7 +1367,8 @@ export function DebugPage({ users, votes }) {
             return;
         }
         try {
-            await db.collection('votes').doc(editingVote.id).update({ ratings: editVoteValues });
+            const voteRef = doc(db, 'votes', editingVote.id);
+            await updateDoc(voteRef, { ratings: editVoteValues });
             alert('Voto aggiornato! Ricarica la pagina per vedere le modifiche.');
             setEditingVote(null);
         } catch (err) {
@@ -242,7 +1383,8 @@ export function DebugPage({ users, votes }) {
         }
         if (!confirm('Eliminare questo voto?')) return;
         try {
-            await db.collection('votes').doc(voteId).delete();
+            const voteRef = doc(db, 'votes', voteId);
+            await deleteDoc(voteRef);
             alert('Voto eliminato! Ricarica la pagina.');
         } catch (err) {
             alert('Errore durante l\'eliminazione: ' + err.message);
@@ -402,3 +1544,5 @@ export function DebugPage({ users, votes }) {
         </div>
     );
 }
+
+export { SettingsPage, AdminPage, DebugPage };
