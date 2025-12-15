@@ -40,10 +40,10 @@ export const shortSKILLS_GK = {
     fisiche: ['AGL', 'RFL', 'ELV', 'RES', 'TUF']
 };
 
-export const ROLES = {
+export const ROLES = [
     'Portiere', 'Difensore centrale', 'Difensore laterale sx', 'Difensore laterale dx',
     'Centrocampista difensivo', 'Centrocampista offensivo', 'Mezzala sx', 'Mezzala dx', 'Centravanti'
-};
+];
 
 // =========================================================================
 // FUNZIONI HELPER

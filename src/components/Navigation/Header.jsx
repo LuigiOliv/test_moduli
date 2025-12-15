@@ -1,66 +1,62 @@
 // src/components/Navigation/Header.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import utils from '../../utils.js';
 
-/**
- * Componente Header (Testata superiore con info utente e menu a tendina)
- * @param {object} user - L'utente corrente.
- * @param {function} onLogout - Callback per il logout.
- * @param {function} onOpenSettings - Callback per navigare direttamente alle impostazioni.
- */
-function Header({ user, onLogout, onOpenSettings }) {
+function Header({ user, onLogout, onOpenSettings, setActiveTab }) {
     const [showMenu, setShowMenu] = useState(false);
-    
-    // Funzione per chiudere il menu e chiamare il logout
-    const handleLogoutClick = () => {
-        setShowMenu(false);
-        onLogout();
-    };
 
-    // Funzione per navigare alle impostazioni
-    const handleSettingsClick = () => {
-        setShowMenu(false);
-        onOpenSettings();
-    };
+    // CLAUSOLA DI PROTEZIONE (GUARD CLAUSE)
+    // Se 'user' non è definito o è null, non renderizzare nulla o renderizza un placeholder vuoto.
+    // L'App.jsx (o index.html) dovrebbe già gestire il reindirizzamento ad AuthPage, 
+    // ma questa è una protezione extra.
+    if (!user) {
+        return null; // Non renderizza l'header se non c'è utente
+    }
 
     return (
         <div className="header">
             <div className="header-left">
-                <h1>⚽ Calcetto del <span style={{color: 'var(--volt)'}}>giovedì</span></h1>
+                <h1>⚽ Calcetto del <span style={{ color: 'var(--volt)' }}>giovedì</span></h1>
                 <p>Dedicata a quelli che il week-end inizia con la partitella</p>
             </div>
-            
-            <div className="header-right">
-                <div 
-                    className="user-info" 
-                    // Classe CSS per gestire la posizione relativa e il cursor
-                    onClick={() => setShowMenu(!showMenu)} 
-                    aria-expanded={showMenu}
+            <div className="user-info" style={{ position: 'relative' }}>
+                <div
+                    className="avatar"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setShowMenu(!showMenu)}
                 >
-                    <div className="avatar" title={user.displayName}>
-                        {utils.getInitials(user.displayName)}
-                    </div>
-                    <div className="user-details">
-                        <span className="user-nickname">{user.nickname || user.displayName}</span>
-                        <span className="user-role">{user.role || 'Giocatore'}</span>
-                    </div>
+                    {user.avatar ? <img src={user.avatar} alt={user.name} /> : utils.getInitials(user.name)}
                 </div>
-
-                {/* Dropdown Menu (Menu a tendina) */}
+                <div onClick={() => setShowMenu(!showMenu)} style={{ cursor: 'pointer' }}>
+                    <div className="user-name">{user.name}</div>
+                    <div className="user-email">{user.email}</div>
+                </div>
+                <button
+                    className="user-menu-btn"
+                    onClick={() => setShowMenu(!showMenu)}
+                >
+                    {showMenu ? '✕' : '☰'}
+                </button>
                 {showMenu && (
-                    <div className="header-dropdown-menu">
-                        <div className="menu-item disabled">
-                            {user.email} {user.isAdmin && <span className="admin-tag">ADMIN</span>}
-                        </div>
-                        <div className="menu-separator"></div>
-                        <div className="menu-item" onClick={handleSettingsClick}>
-                            <span className="icon">⚙️</span> Impostazioni
-                        </div>
-                        <div className="menu-item logout" onClick={handleLogoutClick}>
-                            <span className="icon">🚪</span> Logout
-                        </div>
+                    <div className="user-dropdown-menu">
+                        <button className="dropdown-item" onClick={() => { onOpenSettings(); setShowMenu(false); }}>
+                            ⚙️ Impostazioni
+                        </button>
+                        {user.isAdmin && (
+                            <>
+                                <button className="dropdown-item" onClick={() => { setActiveTab('admin'); setShowMenu(false); }}>
+                                    🔧 Pannello Admin
+                                </button>
+                                <button className="dropdown-item" onClick={() => { setActiveTab('debug'); setShowMenu(false); }}>
+                                    🛠 Debug
+                                </button>
+                            </>
+                        )}
+                        <button className="dropdown-item logout" onClick={() => { onLogout(); setShowMenu(false); }}>
+                            🚪 Esci
+                        </button>
                     </div>
                 )}
             </div>
