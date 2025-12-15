@@ -100,8 +100,8 @@ function PlayerProfile({ player, votes = [], isOwnProfile, onBack }) {
 
                                         <RadarChart
                                             data={averages}
-                                            labels={skills}
-                                            shortLabels={skills.map(skill => shortSkills[skill] || skill.substring(0, 3))}
+                                            labels={skills}         // skill estese → per i valori
+                                            shortLabels={shortSkills} // abbreviazioni → per visualizzare
                                             category={category}
                                         />
                                     </div>
