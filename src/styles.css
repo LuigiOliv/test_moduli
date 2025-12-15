@@ -672,6 +672,7 @@ p {
         gap: 20px;
         align-items: center;
         padding: 25px 30px;
+        min-width: 600px
     }
 }
 
