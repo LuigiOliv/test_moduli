@@ -101,7 +101,7 @@ function PlayerProfile({ player, votes = [], isOwnProfile, onBack }) {
                                         <RadarChart
                                             data={averages}
                                             labels={skills}         // skill estese → per i valori
-                                            shortLabels={shortSkills} // abbreviazioni → per visualizzare
+                                            shortLabels={shortSkills[category]} // abbreviazioni → per visualizzare
                                             category={category}
                                         />
                                     </div>
