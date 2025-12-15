@@ -2435,11 +2435,11 @@ p {
 
     .chart-box {
         height: 480px;
-        min-height: 480px;
+        min-height: 400px;
     }
 
     .chart-box-inner {
-        min-height: 480px;
+        min-height: 400px;
     }
 
     .chart-box-front,
@@ -2476,7 +2476,7 @@ p {
     }
 
     .chart-canvas {
-        height: 280px !important;
+        height: 200px !important;
     }
 
     .chart-box-back h4 {
