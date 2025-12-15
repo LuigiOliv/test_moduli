@@ -611,6 +611,7 @@ p {
 .matches-list {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 15px;
     width: 100%;
 }
