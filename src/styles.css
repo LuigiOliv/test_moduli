@@ -2324,6 +2324,7 @@ p {
 
 .chart-canvas {
     max-width: 100%;
+    aspect-ratio: 1 / 1;
     margin: 0 auto;
 
     /* Mobile: height responsive */
@@ -2401,9 +2402,6 @@ p {
         margin-bottom: 14px;
     }
 
-    .chart-canvas {
-        height: 260px !important;
-    }
 
     .chart-box-back h4 {
         font-size: 1.4rem;
@@ -2477,9 +2475,6 @@ p {
         margin-bottom: 15px;
     }
 
-    .chart-canvas {
-        height: 200px !important;
-    }
 
     .chart-box-back h4 {
         font-size: 1.5rem;
