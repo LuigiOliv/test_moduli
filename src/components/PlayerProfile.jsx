@@ -75,7 +75,7 @@ function PlayerProfile({ player, votes = [], isOwnProfile, onBack }) {
             {hasEnoughVotes && averages ? (
                 <div className="charts-container">
                     {Object.entries(getSkillsForPlayer(player)).map(([category, skills]) => {
-                        const shortSkills = getShortSkillsForPlayer(player);
+                        const shortSkills = getShortSkillsForPlayer(player)[category];
                         const catOverall = utils.calculateCategoryOverall(averages, category, player);
 
                         return (
@@ -101,7 +101,7 @@ function PlayerProfile({ player, votes = [], isOwnProfile, onBack }) {
                                         <RadarChart
                                             data={averages}
                                             labels={skills}         // skill estese → per i valori
-                                            shortLabels={shortSkills[category]} // abbreviazioni → per visualizzare
+                                            shortLabels={shortSkills} // abbreviazioni → per visualizzare
                                             category={category}
                                         />
                                     </div>
