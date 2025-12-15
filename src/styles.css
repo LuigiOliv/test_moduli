@@ -2328,7 +2328,7 @@ p {
     margin: 0 auto;
 
     /* Mobile: height responsive */
-    height: 240px !important;
+    height: auto;
 }
 
 /* Tabella nel retro della card */
