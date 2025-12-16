@@ -233,7 +233,7 @@ function App() {
         return (
             <div className="login-container">
                 <div className="login-card">
-                    <h1>⚽ Futbolín</h1>
+                    <h1>⚽ Sportivity</h1>
                     <p>Caricamento in corso...</p>
                 </div>
             </div>

@@ -18,8 +18,8 @@ function Header({ user, onLogout, onOpenSettings, setActiveTab }) {
     return (
         <div className="header">
             <div className="header-left">
-                <h1>⚽ Futbol<span style={{ color: 'var(--volt)' }}>ín</span></h1>
-                <p>Per giocare con gli amici ma sentirti dentro Fifa!</p>
+                <h1>⚽ Sport<span style={{ color: 'var(--volt)' }}>ivity</span></h1>
+                <p>Giocare con gli amici e sentirsi dentro Fifa!</p>
             </div>
             <div className="user-info" style={{ position: 'relative' }}>
                 <div

@@ -22,8 +22,8 @@ export function LoginPage({ onLogin }) {
     return (
         <div className="login-container">
             <div className="login-card">
-                <h1>⚽ Futbolín</h1>
-                <p>Accedi per giocare con gli amici ma sentirti dentro Fifa!</p>
+                <h1>⚽ Sportivity</h1>
+                <p>Accedi per giocare con gli amici e sentirti dentro Fifa!</p>
 
                 {error && <div className="error-message">{error}</div>}
 
