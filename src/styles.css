@@ -5046,11 +5046,6 @@ p {
     margin-bottom: 15px;
 }
 
-.chart-canvas {
-    height: auto;
-    aspect-ratio: 1 / 1;
-    margin: 0 auto;
-}
 
 /* Tabella nel retro della card */
 .chart-box-back h4 {

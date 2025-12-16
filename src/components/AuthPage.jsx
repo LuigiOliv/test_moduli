@@ -24,20 +24,17 @@ export function LoginPage({ onLogin }) {
             <div className="login-card">
                 <h1>⚽ Calcetto Rating v3</h1>
                 <p>Accedi con il tuo account Google per visualizzare le classifiche, iscriverti alle partite e votare le performance.</p>
-                
+
                 {error && <div className="error-message">{error}</div>}
 
-                <button 
-                    className="button primary" 
-                    onClick={handleGoogleLogin} 
-                    disabled={loading}
-                    style={{ padding: '12px 24px', fontSize: '16px', cursor: 'pointer' }}
-                >
-                    {loading ? 'Caricamento...' : 'Accedi con Google'}
+                <button
+                    className="google-btn"
+                    onClick={handleGoogleLogin}
+                    disabled={loading}>
+                    <span>🔐</span>
+                    {loading ? 'Accesso in corso...' : 'Accedi con Google'}
                 </button>
-            </div>
-            <div className="copyright-notice">
-                © 2025 Luigi Oliviero | Tutti i diritti riservati
+                <p className="login-hint">Al primo accesso potrai associare il tuo profilo</p>
             </div>
         </div>
     );

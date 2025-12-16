@@ -62,6 +62,23 @@ const storage = {
     clearAll: () => {
         localStorage.removeItem('calcetto_current_user');
     },
+    handleLogin: async () => {
+        const { auth } = await import('./firebase.js');
+        const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+
+        return {
+            email: result.user.email,
+            displayName: result.user.displayName,
+            photoURL: result.user.photoURL
+        };
+    },
+
+
+
+
     getMatches: async () => {
         const q = query(
             collection(db, 'matches'),

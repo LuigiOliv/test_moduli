@@ -190,8 +190,8 @@ function App() {
         setShowRoleModal(true);
     };
 
-    const handleLogout = () => {
-        auth().signOut();
+    const handleLogout = async () => {
+        await signOut(auth);
         setCurrentUser(null);
         storage.setCurrentUser(null);
     };
