@@ -16,6 +16,8 @@ import { RoleEditModal } from './Modals.jsx';
 function SettingsPage({ user, onUpdateUser }) {
     const [showSuccess, setShowSuccess] = useState(false);
     const [showRoleEdit, setShowRoleEdit] = useState(false);
+    const [editingName, setEditingName] = useState(false);
+    const [newName, setNewName] = useState(user.name);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -29,6 +31,24 @@ function SettingsPage({ user, onUpdateUser }) {
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleNameSave = async () => {
+        if (!newName.trim()) {
+            alert('Il nome non può essere vuoto');
+            return;
+        }
+        const updatedUser = { ...user, name: newName.trim() };
+        await storage.updateUser(updatedUser);
+        await onUpdateUser(updatedUser);
+        setEditingName(false);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+    };
+
+    const handleNameCancel = () => {
+        setNewName(user.name);
+        setEditingName(false);
     };
 
     return (
@@ -53,7 +73,43 @@ function SettingsPage({ user, onUpdateUser }) {
             <div className="settings-group">
                 <h3>Informazioni Account</h3>
                 <div className="settings-info-box">
-                    <div style={{ marginBottom: '15px' }}><strong>Nome:</strong> {user.name}</div>
+                    <div style={{ marginBottom: '15px' }}>
+                        <strong>Nome:</strong>{' '}
+                        {editingName ? (
+                            <div style={{ display: 'inline-flex', gap: '10px', alignItems: 'center' }}>
+                                <input
+                                    type="text"
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    style={{
+                                        padding: '5px 10px',
+                                        borderRadius: '4px',
+                                        border: '1px solid var(--volt)',
+                                        background: 'var(--bg-deep)',
+                                        color: 'white'
+                                    }}
+                                    autoFocus
+                                />
+                                <button className="btn btn-primary" onClick={handleNameSave} style={{ padding: '5px 15px' }}>
+                                    ✓
+                                </button>
+                                <button className="btn btn-secondary" onClick={handleNameCancel} style={{ padding: '5px 15px' }}>
+                                    ✕
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                {user.name}{' '}
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setEditingName(true)}
+                                    style={{ padding: '3px 10px', fontSize: '12px', marginLeft: '10px' }}
+                                >
+                                    ✏️ Modifica
+                                </button>
+                            </>
+                        )}
+                    </div>
                     <div><strong>Email:</strong> {user.email}</div>
                 </div>
             </div>

@@ -22,8 +22,8 @@ export function LoginPage({ onLogin }) {
     return (
         <div className="login-container">
             <div className="login-card">
-                <h1>⚽ Calcetto Rating v3</h1>
-                <p>Accedi con il tuo account Google per visualizzare le classifiche, iscriverti alle partite e votare le performance.</p>
+                <h1>⚽ Futbolín</h1>
+                <p>Accedi per giocare con gli amici ma sentirti dentro Fifa!</p>
 
                 {error && <div className="error-message">{error}</div>}
 
