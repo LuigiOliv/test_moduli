@@ -197,6 +197,13 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
     const [editingMaxPlayers, setEditingMaxPlayers] = useState(null);
     const [newMaxPlayers, setNewMaxPlayers] = useState('');
 
+    // STATI PER MODIFICA INFO PARTITA (DATA/ORA/LOCATION)
+    const [editingMatchInfo, setEditingMatchInfo] = useState(null);
+    const [editDate, setEditDate] = useState('');
+    const [editTime, setEditTime] = useState('');
+    const [editLocation, setEditLocation] = useState('');
+    const [showEditMatchModal, setShowEditMatchModal] = useState(false);
+
     // Carica partite all'avvio
     useEffect(() => {
         loadAdminMatches();
@@ -389,6 +396,91 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
             console.error('Errore aggiornamento max players:', error);
             alert('Errore durante l\'aggiornamento');
         }
+    };
+
+    const handleEditMatchInfo = (match) => {
+        // Check if teams are already assigned
+        if (match.teams && (match.teams.gialli.length > 0 || match.teams.verdi.length > 0)) {
+            if (!confirm('⚠️ ATTENZIONE: Le squadre sono già state assegnate. Modificare data/ora potrebbe causare conflitti con la disponibilità dei giocatori. Procedere?')) {
+                return;
+            }
+        }
+
+        // Extract date and time from match.date
+        const matchDate = new Date(match.date);
+        const dateStr = matchDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        const timeStr = `${String(matchDate.getHours()).padStart(2, '0')}:${String(matchDate.getMinutes()).padStart(2, '0')}`; // HH:mm
+
+        setEditingMatchInfo(match.id);
+        setEditDate(dateStr);
+        setEditTime(timeStr);
+        setEditLocation(match.location);
+        setShowEditMatchModal(true);
+    };
+
+    const handleSaveMatchInfo = async (matchId) => {
+        // Validation
+        if (!editDate || !editTime || !editLocation.trim()) {
+            alert('Tutti i campi sono obbligatori');
+            return;
+        }
+
+        // Check if date is in the past
+        const newMatchDateTime = new Date(`${editDate}T${editTime}:00`);
+        const now = new Date();
+        if (newMatchDateTime < now) {
+            alert('Non puoi impostare una data nel passato');
+            return;
+        }
+
+        try {
+            // Recalculate all deadlines based on new date/time
+            const matchDateTime = new Date(`${editDate}T${editTime}:00`);
+
+            // Deadline display: 3 giorni prima alle 18:00
+            const regDeadlineDisplay = new Date(matchDateTime);
+            regDeadlineDisplay.setDate(regDeadlineDisplay.getDate() - 3);
+            regDeadlineDisplay.setHours(18, 0, 0, 0);
+
+            // Deadline forzata: 50 minuti prima della partita
+            const regDeadlineForced = new Date(matchDateTime);
+            regDeadlineForced.setMinutes(regDeadlineForced.getMinutes() - 50);
+
+            // Deadline voti: 3 giorni dopo a mezzanotte
+            const votingDeadline = new Date(matchDateTime);
+            votingDeadline.setDate(votingDeadline.getDate() + 3);
+            votingDeadline.setHours(23, 59, 59, 999);
+
+            // Update match with new info and recalculated deadlines
+            await storage.updateMatch(matchId, {
+                date: matchDateTime.toISOString(),
+                location: editLocation.trim(),
+                registrationDeadlineDisplay: regDeadlineDisplay.toISOString(),
+                registrationDeadlineForced: regDeadlineForced.toISOString(),
+                votingDeadline: votingDeadline.toISOString()
+            });
+
+            // Reset state
+            setEditingMatchInfo(null);
+            setEditDate('');
+            setEditTime('');
+            setEditLocation('');
+            setShowEditMatchModal(false);
+
+            showSuccessMsg('Informazioni partita aggiornate!');
+            await loadAdminMatches();
+        } catch (error) {
+            console.error('Errore aggiornamento info partita:', error);
+            alert('Errore durante l\'aggiornamento');
+        }
+    };
+
+    const handleCancelEditMatchInfo = () => {
+        setEditingMatchInfo(null);
+        setEditDate('');
+        setEditTime('');
+        setEditLocation('');
+        setShowEditMatchModal(false);
     };
 
     const handleDeleteMatch = async (matchId) => {
@@ -805,6 +897,9 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                 <div className="admin-matches-list">
                     {adminMatches.map(match => {
                         const regs = adminRegistrations[match.id] || [];
+                        const hasTeams = match.teams && (match.teams.gialli.length > 0 || match.teams.verdi.length > 0);
+                        const canEdit = match.status === 'OPEN'; // Only OPEN matches can be edited
+
                         return (
                             <div key={match.id} className="admin-match-item">
                                 <div className="admin-match-header">
@@ -814,7 +909,27 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                                         {match.status === 'VOTING' && '⭐ VOTAZIONI'}
                                         {match.status === 'COMPLETED' && '✅ FINITA'}
                                     </span>
-                                    <span className="admin-match-date">{utils.formatMatchDate(match.date)}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span className="admin-match-date">{utils.formatMatchDate(match.date)}</span>
+                                        {canEdit && (
+                                            <button
+                                                onClick={() => handleEditMatchInfo(match)}
+                                                style={{
+                                                    background: 'var(--volt)',
+                                                    border: 'none',
+                                                    padding: '4px 8px',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    color: 'var(--bg-deep)',
+                                                    fontSize: '12px',
+                                                    fontWeight: 'bold'
+                                                }}
+                                                title="Modifica data/ora/location"
+                                            >
+                                                ✏️ Modifica
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="admin-match-info">
@@ -875,9 +990,12 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                                         </div>
                                     ) : (
                                         <span
-                                            onClick={() => handleEditMaxPlayers(match.id, match.maxPlayers)}
-                                            style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                            title="Click per modificare"
+                                            onClick={() => canEdit && handleEditMaxPlayers(match.id, match.maxPlayers)}
+                                            style={{
+                                                cursor: canEdit ? 'pointer' : 'default',
+                                                textDecoration: canEdit ? 'underline' : 'none'
+                                            }}
+                                            title={canEdit ? "Click per modificare" : ""}
                                         >
                                             👥 {regs.length}/{match.maxPlayers}
                                         </span>
@@ -1065,6 +1183,103 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                         <div className="modal-actions">
                             <button className="btn btn-secondary" onClick={() => setEditingVotes(null)}>Annulla</button>
                             <button className="btn btn-primary" onClick={handleSaveVotes}>Salva</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL MODIFICA INFO PARTITA */}
+            {showEditMatchModal && (
+                <div className="modal-overlay" onClick={handleCancelEditMatchInfo}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>✏️ Modifica Informazioni Partita</h3>
+                            <button className="modal-close" onClick={handleCancelEditMatchInfo}>✕</button>
+                        </div>
+
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label>Data Partita *</label>
+                                <input
+                                    type="date"
+                                    value={editDate}
+                                    onChange={(e) => setEditDate(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        background: 'var(--bg-deep)',
+                                        border: '1px solid var(--volt)',
+                                        borderRadius: '8px',
+                                        color: 'white',
+                                        fontSize: '14px'
+                                    }}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Orario *</label>
+                                <input
+                                    type="time"
+                                    value={editTime}
+                                    onChange={(e) => setEditTime(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        background: 'var(--bg-deep)',
+                                        border: '1px solid var(--volt)',
+                                        borderRadius: '8px',
+                                        color: 'white',
+                                        fontSize: '14px'
+                                    }}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Location *</label>
+                                <input
+                                    type="text"
+                                    value={editLocation}
+                                    onChange={(e) => setEditLocation(e.target.value)}
+                                    placeholder="Es: Campo SuperSantos, Portici"
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        background: 'var(--bg-deep)',
+                                        border: '1px solid var(--volt)',
+                                        borderRadius: '8px',
+                                        color: 'white',
+                                        fontSize: '14px'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{
+                                marginTop: '20px',
+                                padding: '12px',
+                                background: 'rgba(251, 191, 36, 0.1)',
+                                border: '1px solid rgba(251, 191, 36, 0.3)',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                color: '#fbbf24'
+                            }}>
+                                ℹ️ <strong>Nota:</strong> Le scadenze (iscrizioni e votazioni) verranno ricalcolate automaticamente in base alla nuova data.
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button
+                                className="btn btn-secondary"
+                                onClick={handleCancelEditMatchInfo}
+                            >
+                                ✕ Annulla
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => handleSaveMatchInfo(editingMatchInfo)}
+                                disabled={!editDate || !editTime || !editLocation.trim()}
+                            >
+                                ✓ Salva Modifiche
+                            </button>
                         </div>
                     </div>
                 </div>
