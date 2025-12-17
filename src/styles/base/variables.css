@@ -1,0 +1,25 @@
+:root {
+    /* Colori Background */
+    --bg-deep: #0B0E14;
+    --bg-card: #151B25;
+    --bg-hover: #1E2532;
+
+    /* Colori Accent */
+    --volt: #D2F800;
+    --electric-blue: #00F0FF;
+    --hot-red: #FF2E63;
+
+    /* Colori Testo */
+    --text-main: #FFFFFF;
+    --text-muted: #94A3B8;
+
+    /* Effetti */
+    --shadow-glow: 0 0 20px rgba(210, 248, 0, 0.15);
+    --shadow-strong: 0 0 30px rgba(0, 0, 0, 0.8);
+
+    /* BREAKPOINTS - Aggiunti per chiarezza */
+    --mobile-max: 767px;
+    --tablet-min: 768px;
+    --desktop-min: 1024px;
+    --desktop-large: 1400px;
+}

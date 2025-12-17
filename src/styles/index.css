@@ -1,0 +1,38 @@
+/**
+ * 🧪 TEST VERSION - Modular CSS Entry Point
+ * This replaces the monolithic styles.css
+ */
+
+/* 1. BASE - Must load first */
+@import './base/variables.css';
+@import './base/reset.css';
+@import './base/typography.css';
+
+/* 2. LAYOUT - Core layout components */
+@import './layout/containers.css';
+@import './layout/avatar.css';
+@import './layout/header.css';
+@import './layout/navigation.css';
+
+/* 3. COMPONENTS - Reusable UI elements */
+@import './components/buttons.css';
+@import './components/forms.css';
+@import './components/modals.css';
+@import './components/badges.css';
+@import './components/cards.css';
+
+/* 4. PAGES - Page-specific styles */
+@import './pages/auth.css';
+@import './pages/voting.css';
+@import './pages/rating-form.css';
+@import './pages/profile.css';
+@import './pages/leaderboard.css';
+@import './pages/admin.css';
+@import './pages/results.css';
+
+/* 5. FEATURES - Special features */
+@import './features/charts.css';
+@import './features/debug.css';
+
+/* 6. UTILITIES - Helper classes (load last) */
+@import './utilities/helpers.css';

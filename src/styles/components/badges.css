@@ -1,0 +1,77 @@
+/* Badge status partita (tab PARTITE) */
+.match-status {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Teko', sans-serif;
+    border: 2px solid transparent;
+}
+
+.match-status.open {
+    background: rgba(210, 248, 0, 0.15);
+    color: var(--volt);
+    border-color: var(--volt);
+}
+
+.match-status.voting {
+    background: rgba(0, 240, 255, 0.15);
+    color: var(--electric-blue);
+    border-color: var(--electric-blue);
+}
+
+.match-status.completed {
+    background: rgba(107, 114, 128, 0.15);
+    color: #9CA3AF;
+    border-color: #6B7280;
+}
+
+.role-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+
+    /* Mobile: allineamento centrato */
+    align-items: center;
+}
+
+.role-badge {
+    color: white;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-family: 'Teko', sans-serif;
+    letter-spacing: 1px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+    border-left: 2px solid rgba(210, 248, 0, 0.5);
+
+    /* Mobile: dimensione chiara */
+    font-size: 1rem;
+}
+
+/* Tablet: layout orizzontale ma compatto */
+@media (min-width: 768px) {
+    .role-badges {
+        align-items: flex-end;
+    }
+
+    .role-badge {
+        font-size: 1.05rem;
+        padding: 6px 13px;
+    }
+}
+
+.profile-role-badge {
+    background: rgba(210, 248, 0, 0.15) !important;
+    color: var(--volt);
+    padding: 6px 14px;
+    border-radius: 15px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid rgba(210, 248, 0, 0.3);
+}

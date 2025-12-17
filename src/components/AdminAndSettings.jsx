@@ -317,9 +317,13 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
 
         if (match.status === 'CLOSED') {
             console.log('🟡 Caso rilevato: CLOSED');
-            confirmMessage = 'Riaprire le iscrizioni? Le squadre NON verranno cancellate.';
+            confirmMessage = '⚠️ Riaprire le iscrizioni? ATTENZIONE: Le squadre verranno cancellate!';
             resetData = {
                 status: 'OPEN',
+                teams: { gialli: [], verdi: [] },  // ← AGGIUNTO: cancella squadre
+                score: null,                        // ← AGGIUNTO: reset score
+                topScorer: null,                    // ← AGGIUNTO: reset top scorer
+                topScorerGoals: null,               // ← AGGIUNTO: reset goals
                 manualOverride: true,
                 manualOverrideUntil: Date.now() + (2 * 60 * 60 * 1000)
             };
@@ -337,11 +341,11 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
             };
         } else if (match.status === 'COMPLETED') {
             console.log('🟡 Caso rilevato: COMPLETED');
-            confirmMessage = '⚠️ Riaprire la partita? ATTENZIONE: Risultato e voti verranno cancellati!';
+            confirmMessage = '⚠️ Riaprire la partita? ATTENZIONE: Risultato, squadre e voti verranno cancellati!';
             resetData = {
                 status: 'OPEN',
                 teams: { gialli: [], verdi: [] },
-                score: { gialli: 0, verdi: 0 },
+                score: null,
                 topScorer: null,
                 topScorerGoals: null,
                 manualOverride: true,
