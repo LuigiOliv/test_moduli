@@ -127,7 +127,13 @@ export function RoleSelectionModal({ onSave }) {
         onSave(preferredRole, otherRoles);
     };
 
-    const availableOtherRoles = ROLES.filter(r => r !== preferredRole);
+    const availableOtherRoles = ROLES.filter(r => {
+        // Rimuovi il ruolo preferito
+        if (r === preferredRole) return false;
+        // Se il preferito NON è portiere, rimuovi "Portiere" dagli altri ruoli
+        if (preferredRole && preferredRole !== 'Portiere' && r === 'Portiere') return false;
+        return true;
+    });
 
     return (
         <div className="modal-overlay">
@@ -225,7 +231,13 @@ export function RoleSelectionModal({ onSave }) {
             onSuccess();
     };
 
-    const availableOtherRoles = ROLES.filter(r => r !== preferredRole);
+                const availableOtherRoles = ROLES.filter(r => {
+                    // Rimuovi il ruolo preferito
+                    if (r === preferredRole) return false;
+                    // Se il preferito NON è portiere, rimuovi "Portiere" dagli altri ruoli
+                    if (preferredRole && preferredRole !== 'Portiere' && r === 'Portiere') return false;
+                    return true;
+    });
 
             return (
             <div className="modal-overlay">
