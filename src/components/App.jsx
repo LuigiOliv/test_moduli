@@ -183,10 +183,9 @@ function App() {
         / ✅ Genera ID con formato player{ggmmaaa}_{progressivo}
         const generatePlayerId = () => {
             const today = new Date();
-            const day = String(today.getDate()).padStart(2, '0');
             const month = String(today.getMonth() + 1).padStart(2, '0');
             const year = today.getFullYear();
-            const datePrefix = `player${day}${month}${year}`; // Es: player18122025
+            const datePrefix = `player${month}${year}`; // Es: player18122025
 
             // Trova tutti gli ID che iniziano con questo prefisso
             const todayPlayers = users.filter(u => u.id.startsWith(datePrefix));
