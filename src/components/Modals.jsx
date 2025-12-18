@@ -12,6 +12,7 @@ import { ROLES } from '../constants.js';
 export function ClaimProfileModal({ users, onClaim, onNewPlayer }) {
     const [selectedPlayer, setSelectedPlayer] = useState('');
     const [newPlayerName, setNewPlayerName] = useState('');
+    const [showNewPlayerInput, setShowNewPlayerInput] = useState(false); // ← NUOVO stato
     const availablePlayers = users.filter(u => !u.claimed && !u.id.startsWith('seed'));
 
     return (
@@ -19,6 +20,7 @@ export function ClaimProfileModal({ users, onClaim, onNewPlayer }) {
             <div className="modal-content">
                 <h2>👋 Benvenuto!</h2>
                 <p>Chi sei tra questi giocatori?</p>
+
                 <div className="form-group">
                     <label>Seleziona il tuo nome (potrai cambiarlo dopo!):</label>
                     <select value={selectedPlayer} onChange={(e) => setSelectedPlayer(e.target.value)}>
@@ -28,6 +30,7 @@ export function ClaimProfileModal({ users, onClaim, onNewPlayer }) {
                         ))}
                     </select>
                 </div>
+
                 <button
                     className="btn btn-primary full-width"
                     onClick={() => selectedPlayer && onClaim(selectedPlayer)}
@@ -35,24 +38,54 @@ export function ClaimProfileModal({ users, onClaim, onNewPlayer }) {
                 >
                     ✓ Eccomi!
                 </button>
-            </div>
-            <div className="modal-divider">
-                <p className="modal-hint">Non trovi il tuo nome?</p>
-                <div className="form-group">  {/* ← Aggiungi form-group */}
-                    <input
-                        type="text"
-                        placeholder="Scrivi il tuo nome e cognome"
-                        value={newPlayerName}
-                        onChange={(e) => setNewPlayerName(e.target.value)}
-                    />
+
+                {/* ✅ DENTRO IL MODAL - Divider visivo */}
+                <div className="modal-divider">
+                    <p className="modal-hint">Non trovi il tuo nome?</p>
+
+                    {/* ✅ Mostra input SOLO se showNewPlayerInput è true */}
+                    {showNewPlayerInput ? (
+                        <>
+                            <div className="form-group">
+                                <input
+                                    type="text"
+                                    placeholder="Scrivi il tuo nome e cognome"
+                                    value={newPlayerName}
+                                    onChange={(e) => setNewPlayerName(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => {
+                                        setShowNewPlayerInput(false);
+                                        setNewPlayerName('');
+                                    }}
+                                    style={{ flex: 1 }}
+                                >
+                                    ✕ Annulla
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => onNewPlayer(newPlayerName)}
+                                    disabled={!newPlayerName.trim()}
+                                    style={{ flex: 1 }}
+                                >
+                                    ✓ Conferma
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        // ✅ Mostra bottone SOLO se input è nascosto
+                        <button
+                            className="btn btn-secondary full-width"
+                            onClick={() => setShowNewPlayerInput(true)}
+                        >
+                            + Sono un nuovo giocatore
+                        </button>
+                    )}
                 </div>
-                <button
-                    className="btn btn-secondary full-width"
-                    onClick={() => onNewPlayer(newPlayerName)}
-                    disabled={!newPlayerName.trim()}
-                >
-                    + Sono un nuovo giocatore
-                </button>
             </div>
         </div>
     );
