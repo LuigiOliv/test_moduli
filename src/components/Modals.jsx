@@ -109,20 +109,6 @@ export function RoleSelectionModal({ onSave }) {
                     >
                         <option value="">-- Seleziona --</option>
                         {ROLES.map(role => (
-                    <div className="modal-divider">
-                    <p className="modal-hint">Non trovi il tuo nome?</p>
-                    <input
-                        type="text"
-                        placeholder="Scrivi il tuo nome e cognome"
-                        value={newPlayerName}
-                        onChange={(e) => setNewPlayerName(e.target.value)}
-                    />
-                    <button
-                        className="btn btn-secondary full-width"
-                        onClick={() => onNewPlayer(newPlayerName)}
-                        disabled={!newPlayerName.trim()}
-                    >
-                        + Sono un nuovo giocatore
                             <option key={role} value={role}>{role}</option>
                         ))}
                     </select>
