@@ -181,65 +181,6 @@
 }
 
 /* ============================================================================
-   ADMIN ACTION BUTTONS - GESTIONE PARTITE
-   ============================================================================ */
-.admin-action-btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.admin-action-btn.close {
-    background: #f59e0b;
-    color: white;
-}
-
-.admin-action-btn.close:hover {
-    background: #d97706;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-}
-
-.admin-action-btn.assign {
-    background: #667eea;
-    color: white;
-}
-
-.admin-action-btn.assign:hover {
-    background: #5a67d8;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.admin-action-btn.score {
-    background: #48bb78;
-    color: white;
-}
-
-.admin-action-btn.score:hover {
-    background: #38a169;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
-}
-
-.admin-action-btn.delete {
-    background: var(--hot-red);
-    color: white;
-}
-
-.admin-action-btn.delete:hover {
-    background: #c81e4d;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 46, 99, 0.3);
-}
-
-/* ============================================================================
    PULSANTE SCEGLI FILE AVATAR - UPLOAD GIOCATORE
    ============================================================================ */
 
@@ -511,4 +452,155 @@
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
     color: white;
+}
+
+/* ============================================================================
+   ADMIN ACTION BUTTONS - GESTIONE PARTITE
+   ============================================================================ */
+.admin-action-btn {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Roboto', sans-serif;
+}
+
+.admin-action-btn.close {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgb(245, 158, 11);
+    color: rgb(245, 158, 11);
+}
+
+.admin-action-btn.close:hover {
+    background: rgb(245, 158, 11);
+    color: black;
+}
+
+.admin-action-btn.assign {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgb(59, 130, 246);
+    color: rgb(59, 130, 246);
+}
+
+.admin-action-btn.assign:hover {
+    background: rgb(59, 130, 246);
+    color: white;
+}
+
+.admin-action-btn.delete {
+    background: rgba(255, 46, 99, 0.2);
+    border: 1px solid var(--hot-red);
+    color: var(--hot-red);
+}
+
+.admin-action-btn.delete:hover {
+    background: var(--hot-red);
+    color: white;
+}
+
+/* DESKTOP: layout orizzontale */
+@media (min-width: 768px) {
+    .admin-match-header {
+        gap: 15px;
+    }
+
+    .admin-match-info {
+        flex-direction: row;
+        gap: 20px;
+    }
+
+    .admin-match-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .admin-action-btn {
+        width: auto;
+        padding: 8px 16px;
+    }
+}
+
+/* ============================================================================
+RATING BUTTONS - MOBILE FIRST
+============================================================================ */
+
+.rating-buttons {
+    display: flex;
+
+    /* Mobile: full width con gap ottimale per touch */
+    width: 100%;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.rating-btn {
+    background: var(--bg-deep);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-muted);
+    font-family: 'Teko', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+
+    /* Mobile: TOUCH TARGET OTTIMALE - minimo 48x48px raccomandato */
+    /* Qui uso 52px per essere generosi */
+    flex: 1;
+    min-width: 52px;
+    min-height: 52px;
+    font-size: 1.5rem;
+
+    /* Tap highlight ottimizzato */
+    -webkit-tap-highlight-color: rgba(210, 248, 0, 0.2);
+}
+
+.rating-btn:hover,
+.rating-btn:active {
+    border-color: var(--volt);
+    color: white;
+    transform: scale(1.05);
+}
+
+.rating-btn.selected {
+    background: var(--volt);
+    color: black;
+    border-color: var(--volt);
+    font-weight: 700;
+    box-shadow: 0 0 10px var(--volt);
+}
+
+/* Tablet: layout piÃ¹ compatto */
+@media (min-width: 768px) {
+    .rating-buttons {
+        width: auto;
+        gap: 6px;
+        justify-content: flex-start;
+    }
+
+    .rating-btn {
+        flex: 0 0 auto;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 1.45rem;
+    }
+}
+
+/* Desktop: dimensioni originali */
+@media (min-width: 1024px) {
+    .rating-buttons {
+        gap: 5px;
+    }
+
+    .rating-btn {
+        width: 45px;
+        height: 45px;
+        min-width: 45px;
+        min-height: 45px;
+        font-size: 1.4rem;
+    }
 }

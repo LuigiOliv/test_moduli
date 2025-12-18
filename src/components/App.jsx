@@ -46,7 +46,7 @@ function App() {
             if (firebaseUser && firebaseUser.email) {
                 setLoading(true);
                 try {
-                    // 🔧 FIX: Gestisci caso undefined
+                    // A. Leggi TUTTI gli utenti
                     let loadedUsers = await storage.getUsers();
 
                     // 🛡️ SAFETY CHECK
@@ -55,31 +55,43 @@ function App() {
                         loadedUsers = [];
                     }
 
+                    // ✅ IMPORTANTE: Salva users SUBITO (serve per ClaimProfileModal)
+                    setUsers(loadedUsers);
+
+                    // B. Trova l'utente loggato
                     const email = firebaseUser.email;
                     const existingUser = loadedUsers.find(u => u.email === email);
 
+                    // C. Logica di login/profilo
                     if (existingUser) {
+                        // Utente Trovato: Completa il Login
                         const userWithAdmin = { ...existingUser, isAdmin: email === ADMIN_EMAIL };
                         setCurrentUser(userWithAdmin);
                         storage.setCurrentUser(userWithAdmin);
 
+                        // D. Carica voti
                         const loadedVotes = await storage.getVotes();
-                        setUsers(loadedUsers);
-                        setVotes(loadedVotes || []); // 🛡️ SAFETY
+                        setVotes(loadedVotes || []);
 
+                        // Gestione modali
                         if (!existingUser.preferredRole) setShowRoleModal(true);
+
                     } else {
+                        // Utente NON Trovato: Richiedi registrazione/claim
+                        // ✅ Ora users è già popolato grazie a setUsers() sopra
                         setPendingEmail(email);
                         setShowClaimModal(true);
                     }
+
                 } catch (error) {
                     console.error('❌ Errore caricamento dati DOPO login:', error);
-                    // 🔧 FIX: Non fare signOut, mostra solo errore
                     alert('Errore caricamento dati. Ricarica la pagina.');
                 } finally {
                     setLoading(false);
                 }
+
             } else {
+                // L'utente NON è loggato
                 setCurrentUser(null);
                 storage.setCurrentUser(null);
                 setLoading(false);
