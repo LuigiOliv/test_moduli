@@ -3555,6 +3555,32 @@ p {
         margin-bottom: 14px;
     }
 
+    /* ✅ AGGIUNGI QUESTO - Stili per input nel modal-divider */
+    .modal-divider input[type="text"] {
+        width: 100%;
+        background: var(--bg-deep);
+        border: 1px solid #333;
+        color: white;
+        font-family: 'Roboto', sans-serif;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        padding: 12px 15px;
+        font-size: 1rem;
+        min-height: 48px;
+        margin-bottom: 15px;
+    }
+
+    .modal-divider input[type="text"]:focus {
+        outline: none;
+        border-color: var(--volt);
+        box-shadow: 0 0 15px rgba(210, 248, 0, 0.25);
+    }
+
+    .modal-divider input[type="text"]::placeholder {
+        color: #666;
+        font-style: italic;
+    }
+
     .modal-actions {
         flex-direction: row;
         gap: 14px;
