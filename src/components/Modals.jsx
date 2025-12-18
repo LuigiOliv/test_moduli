@@ -20,7 +20,7 @@ export function ClaimProfileModal({ users, onClaim, onNewPlayer }) {
                 <h2>👋 Benvenuto!</h2>
                 <p>Chi sei tra questi giocatori?</p>
                 <div className="form-group">
-                    <label>Seleziona il tuo nome:</label>
+                    <label>Seleziona il tuo nome (potrai cambiarlo dopo!):</label>
                     <select value={selectedPlayer} onChange={(e) => setSelectedPlayer(e.target.value)}>
                         <option value="">-- Seleziona il tuo profilo --</option>
                         {availablePlayers.map(player => (
@@ -33,7 +33,7 @@ export function ClaimProfileModal({ users, onClaim, onNewPlayer }) {
                     onClick={() => selectedPlayer && onClaim(selectedPlayer)}
                     disabled={!selectedPlayer}
                 >
-                    ✓ Sono io!
+                    ✓ Eccomi!
                 </button>
                 <div className="modal-divider">
                     <p className="modal-hint">Non trovi il tuo nome?</p>
