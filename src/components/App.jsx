@@ -180,7 +180,7 @@ function App() {
     const handleNewPlayer = async (playerName) => {
         const isAdmin = pendingEmail === ADMIN_EMAIL;
 
-        / ✅ Genera ID con formato player{ggmmaaa}_{progressivo}
+        // ✅ Genera ID con formato player{mmaaa}_{progressivo}
         const generatePlayerId = () => {
             const today = new Date();
             const month = String(today.getMonth() + 1).padStart(2, '0');

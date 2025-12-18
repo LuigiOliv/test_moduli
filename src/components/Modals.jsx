@@ -35,22 +35,24 @@ export function ClaimProfileModal({ users, onClaim, onNewPlayer }) {
                 >
                     ✓ Eccomi!
                 </button>
-                <div className="modal-divider">
-                    <p className="modal-hint">Non trovi il tuo nome?</p>
+            </div>
+            <div className="modal-divider">
+                <p className="modal-hint">Non trovi il tuo nome?</p>
+                <div className="form-group">  {/* ← Aggiungi form-group */}
                     <input
                         type="text"
                         placeholder="Scrivi il tuo nome e cognome"
                         value={newPlayerName}
                         onChange={(e) => setNewPlayerName(e.target.value)}
                     />
-                    <button
-                        className="btn btn-secondary full-width"
-                        onClick={() => onNewPlayer(newPlayerName)}
-                        disabled={!newPlayerName.trim()}
-                    >
-                        + Sono un nuovo giocatore
-                    </button>
                 </div>
+                <button
+                    className="btn btn-secondary full-width"
+                    onClick={() => onNewPlayer(newPlayerName)}
+                    disabled={!newPlayerName.trim()}
+                >
+                    + Sono un nuovo giocatore
+                </button>
             </div>
         </div>
     );
@@ -107,6 +109,20 @@ export function RoleSelectionModal({ onSave }) {
                     >
                         <option value="">-- Seleziona --</option>
                         {ROLES.map(role => (
+                    <div className="modal-divider">
+                    <p className="modal-hint">Non trovi il tuo nome?</p>
+                    <input
+                        type="text"
+                        placeholder="Scrivi il tuo nome e cognome"
+                        value={newPlayerName}
+                        onChange={(e) => setNewPlayerName(e.target.value)}
+                    />
+                    <button
+                        className="btn btn-secondary full-width"
+                        onClick={() => onNewPlayer(newPlayerName)}
+                        disabled={!newPlayerName.trim()}
+                    >
+                        + Sono un nuovo giocatore
                             <option key={role} value={role}>{role}</option>
                         ))}
                     </select>
@@ -138,139 +154,139 @@ export function RoleSelectionModal({ onSave }) {
                     Conferma {preferredRole !== 'Portiere' && otherRoles.length < 2 && preferredRole ? `(${otherRoles.length}/2 ruoli)` : ''}
                 </button>
             </div>
-        </div>
-    );
+            </div>
+            );
 }
 
-// =========================================================================
-// 3. ROLE EDIT MODAL (Edit existing roles)
-// =========================================================================
+            // =========================================================================
+            // 3. ROLE EDIT MODAL (Edit existing roles)
+            // =========================================================================
 
-export function RoleEditModal({ user, onClose, onSuccess }) {
+            export function RoleEditModal({user, onClose, onSuccess}) {
     const [preferredRole, setPreferredRole] = useState(user.preferredRole || '');
-    const [otherRoles, setOtherRoles] = useState(user.otherRoles || []);
+            const [otherRoles, setOtherRoles] = useState(user.otherRoles || []);
 
     const handleOtherRoleToggle = (role) => {
         if (otherRoles.includes(role)) {
-            setOtherRoles(otherRoles.filter(r => r !== role));
+                setOtherRoles(otherRoles.filter(r => r !== role));
         } else {
-            setOtherRoles([...otherRoles, role]);
+                setOtherRoles([...otherRoles, role]);
         }
     };
 
     const handlePreferredRoleChange = (newRole) => {
         if (otherRoles.includes(newRole)) {
-            setOtherRoles(otherRoles.filter(r => r !== newRole));
+                setOtherRoles(otherRoles.filter(r => r !== newRole));
         }
-        setPreferredRole(newRole);
+            setPreferredRole(newRole);
     };
 
     const handleSubmit = async () => {
         if (!preferredRole) {
-            alert('Seleziona il tuo ruolo preferito');
+                alert('Seleziona il tuo ruolo preferito');
             return;
         }
 
         const cleanedOtherRoles = otherRoles.filter(r => r !== preferredRole);
-        const isGoalkeeper = preferredRole === 'Portiere';
+            const isGoalkeeper = preferredRole === 'Portiere';
 
-        if (!isGoalkeeper && cleanedOtherRoles.length < 2) {
-            alert('Seleziona almeno 2 altri ruoli');
+            if (!isGoalkeeper && cleanedOtherRoles.length < 2) {
+                alert('Seleziona almeno 2 altri ruoli');
             return;
         }
 
-        const updatedUser = {
-            ...user,
-            preferredRole,
-            otherRoles: cleanedOtherRoles
+            const updatedUser = {
+                ...user,
+                preferredRole,
+                otherRoles: cleanedOtherRoles
         };
 
-        await storage.updateUser(updatedUser);
-        storage.setCurrentUser(updatedUser);
-        onSuccess();
+            await storage.updateUser(updatedUser);
+            storage.setCurrentUser(updatedUser);
+            onSuccess();
     };
 
     const availableOtherRoles = ROLES.filter(r => r !== preferredRole);
 
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <h2>✏️ Modifica Ruoli</h2>
-                <p>Aggiorna le tue preferenze di ruolo</p>
+            return (
+            <div className="modal-overlay">
+                <div className="modal-content">
+                    <h2>✏️ Modifica Ruoli</h2>
+                    <p>Aggiorna le tue preferenze di ruolo</p>
 
-                <div className="form-group">
-                    <label>Qual è il tuo ruolo preferito? *</label>
-                    <select
-                        value={preferredRole}
-                        onChange={(e) => handlePreferredRoleChange(e.target.value)}
-                    >
-                        <option value="">-- Seleziona --</option>
-                        {ROLES.map(role => (
-                            <option key={role} value={role}>{role}</option>
-                        ))}
-                    </select>
+                    <div className="form-group">
+                        <label>Qual è il tuo ruolo preferito? *</label>
+                        <select
+                            value={preferredRole}
+                            onChange={(e) => handlePreferredRoleChange(e.target.value)}
+                        >
+                            <option value="">-- Seleziona --</option>
+                            {ROLES.map(role => (
+                                <option key={role} value={role}>{role}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="form-group">
+                        <label>
+                            In quali altri ruoli ti adatti?
+                            {preferredRole === 'Portiere' ? ' (opzionale)' : ' (min. 2) *'}
+                        </label>
+                        <div className="checkbox-group">
+                            {availableOtherRoles.map(role => (
+                                <div key={role} className="checkbox-item">
+                                    <input
+                                        type="checkbox"
+                                        id={`edit-role-${role}`}
+                                        checked={otherRoles.includes(role)}
+                                        onChange={() => handleOtherRoleToggle(role)}
+                                    />
+                                    <label htmlFor={`edit-role-${role}`}>{role}</label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="modal-actions">
+                        <button className="btn btn-secondary" onClick={onClose}>
+                            Annulla
+                        </button>
+                        <button
+                            className={`btn btn-primary ${(!preferredRole || (preferredRole !== 'Portiere' && otherRoles.filter(r => r !== preferredRole).length < 2)) ? 'btn-disabled' : ''}`}
+                            onClick={handleSubmit}
+                            disabled={!preferredRole || (preferredRole !== 'Portiere' && otherRoles.filter(r => r !== preferredRole).length < 2)}
+                        >
+                            Salva Modifiche {preferredRole !== 'Portiere' && otherRoles.filter(r => r !== preferredRole).length < 2 && preferredRole ? `(${otherRoles.filter(r => r !== preferredRole).length}/2 ruoli)` : ''}
+                        </button>
+                    </div>
                 </div>
+            </div>
+            );
+}
 
-                <div className="form-group">
-                    <label>
-                        In quali altri ruoli ti adatti?
-                        {preferredRole === 'Portiere' ? ' (opzionale)' : ' (min. 2) *'}
-                    </label>
-                    <div className="checkbox-group">
-                        {availableOtherRoles.map(role => (
-                            <div key={role} className="checkbox-item">
-                                <input
-                                    type="checkbox"
-                                    id={`edit-role-${role}`}
-                                    checked={otherRoles.includes(role)}
-                                    onChange={() => handleOtherRoleToggle(role)}
-                                />
-                                <label htmlFor={`edit-role-${role}`}>{role}</label>
-                            </div>
+            // =========================================================================
+            // 4. PROFILE SELECTOR MODAL (Antonio's multiple profiles)
+            // =========================================================================
+
+            export function ProfileSelectorModal({profiles, onSelect}) {
+    return (
+            <div className="modal-overlay">
+                <div className="modal-content">
+                    <h2>👋 Ciao Antonio!</h2>
+                    <p>Con quale profilo vuoi entrare?</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '25px' }}>
+                        {profiles.map(profile => (
+                            <button
+                                key={profile.id}
+                                className="btn btn-primary full-width"
+                                onClick={() => onSelect(profile)}
+                                style={{ fontSize: '1.1rem', padding: '18px' }}
+                            >
+                                {profile.isGoalkeeper ? '🧤' : '👤'} {profile.name}
+                            </button>
                         ))}
                     </div>
                 </div>
-
-                <div className="modal-actions">
-                    <button className="btn btn-secondary" onClick={onClose}>
-                        Annulla
-                    </button>
-                    <button
-                        className={`btn btn-primary ${(!preferredRole || (preferredRole !== 'Portiere' && otherRoles.filter(r => r !== preferredRole).length < 2)) ? 'btn-disabled' : ''}`}
-                        onClick={handleSubmit}
-                        disabled={!preferredRole || (preferredRole !== 'Portiere' && otherRoles.filter(r => r !== preferredRole).length < 2)}
-                    >
-                        Salva Modifiche {preferredRole !== 'Portiere' && otherRoles.filter(r => r !== preferredRole).length < 2 && preferredRole ? `(${otherRoles.filter(r => r !== preferredRole).length}/2 ruoli)` : ''}
-                    </button>
-                </div>
             </div>
-        </div>
-    );
-}
-
-// =========================================================================
-// 4. PROFILE SELECTOR MODAL (Antonio's multiple profiles)
-// =========================================================================
-
-export function ProfileSelectorModal({ profiles, onSelect }) {
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <h2>👋 Ciao Antonio!</h2>
-                <p>Con quale profilo vuoi entrare?</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '25px' }}>
-                    {profiles.map(profile => (
-                        <button
-                            key={profile.id}
-                            className="btn btn-primary full-width"
-                            onClick={() => onSelect(profile)}
-                            style={{ fontSize: '1.1rem', padding: '18px' }}
-                        >
-                            {profile.isGoalkeeper ? '🧤' : '👤'} {profile.name}
-                        </button>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
+            );
 }
