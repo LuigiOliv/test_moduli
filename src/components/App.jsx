@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { auth } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import storage from '../storage.js';
+import utils from '../utils.js';  // ← AGGIUNGI QUESTA RIGA
 import { ADMIN_EMAIL } from '../constants.js';
 import Header from './Navigation/Header.jsx';
 import { LoginPage } from './AuthPage.jsx';
@@ -210,34 +211,8 @@ function App() {
     const handleNewPlayer = async (playerName) => {
         const isAdmin = pendingEmail === ADMIN_EMAIL;
 
-        // ✅ Genera ID con formato player{mmaaa}_{progressivo}
-        const generatePlayerId = () => {
-            const today = new Date();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const year = today.getFullYear();
-            const datePrefix = `player${month}${year}`; // Es: player18122025
-
-            // Trova tutti gli ID che iniziano con questo prefisso
-            const todayPlayers = users.filter(u => u.id.startsWith(datePrefix));
-
-            // Estrai i numeri progressivi esistenti
-            const existingNumbers = todayPlayers
-                .map(u => {
-                    const match = u.id.match(/_(\d+)$/); // Estrai numero dopo _
-                    return match ? parseInt(match[1]) : 0;
-                })
-                .filter(n => !isNaN(n));
-
-            // Calcola il prossimo numero
-            const nextNumber = existingNumbers.length > 0
-                ? Math.max(...existingNumbers) + 1
-                : 1;
-
-            return `${datePrefix}_${nextNumber}`;
-        };
-
         const newUser = {
-            id: generatePlayerId(),
+            id: utils.generatePlayerId(users),  // ← USA utils.generatePlayerId
             name: playerName || pendingEmail.split('@')[0],
             email: pendingEmail,
             avatar: null,

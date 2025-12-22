@@ -828,7 +828,20 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
     const handleAddPlayer = async () => {
         const newName = prompt('Nome del nuovo giocatore:');
         if (!newName || !newName.trim()) return;
-        const newPlayer = { id: `player${Date.now()}`, name: newName.trim(), avatar: null, preferredRole: null, otherRoles: [], email: null, claimed: false, isAdmin: false };
+        const newPlayer = { 
+            id: utils.generatePlayerId(users),  // ← CAMBIA QUESTA RIGA
+            name: newName.trim(), 
+            avatar: null, 
+            preferredRole: null, 
+            otherRoles: [], 
+            email: null, 
+            claimed: false, 
+            isAdmin: false,
+            isInitialPlayer: false,
+            hasVotedOffline: false,
+            isGoalkeeper: false
+        };
+
         await storage.updateUser(newPlayer);
         setUsers([...users, newPlayer]);
         showSuccessMsg('Giocatore aggiunto!');

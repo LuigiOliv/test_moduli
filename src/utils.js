@@ -49,6 +49,35 @@ const utils = {
     },
 
     // ============================================================================
+    // GENERAZIONE ID GIOCATORI
+    // ============================================================================
+
+    generatePlayerId: (users) => {
+        const today = new Date();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const year = today.getFullYear();
+        const datePrefix = `player${month}${year}`; // Es: player122025
+
+        // Trova tutti gli ID che iniziano con questo prefisso
+        const todayPlayers = users.filter(u => u.id.startsWith(datePrefix));
+
+        // Estrai i numeri progressivi esistenti
+        const existingNumbers = todayPlayers
+            .map(u => {
+                const match = u.id.match(/_(\d+)$/); // Estrai numero dopo _
+                return match ? parseInt(match[1]) : 0;
+            })
+            .filter(n => !isNaN(n));
+
+        // Calcola il prossimo numero
+        const nextNumber = existingNumbers.length > 0
+            ? Math.max(...existingNumbers) + 1
+            : 1;
+
+        return `${datePrefix}_${nextNumber}`;
+    },
+
+    // ============================================================================
     // HELPER FUNCTIONS PER PARTITE
     // ============================================================================
 
