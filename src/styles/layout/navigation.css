@@ -1,52 +1,43 @@
 .nav-tabs {
-    display: flex;
-    justify-content: center;
-    background: var(--bg-card);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-
-    /* Mobile: layout ottimizzato per touch */
-    gap: 0;
-    /* Gap zero per massimizzare spazio tab */
-    padding: 8px 5px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    overflow-x: auto;
-    /* Scroll orizzontale se necessario */
-    -webkit-overflow-scrolling: touch;
-    /* Smooth scroll iOS */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    margin-bottom: 0;
+    border-top: 2px solid var(--volt);
+    border-bottom: none;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+    padding: 8px 0;
+    background: var(--bg-dark);
 }
 
 .nav-tab {
-    background: transparent;
-    color: var(--text-muted);
-    font-family: 'Teko', sans-serif;
-    border: none;
-    border-bottom: 3px solid transparent;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-
-    /* Mobile: touch target ottimale (minimo 48x48px raccomandato) */
-    font-size: 1.05rem;
-    padding: 12px 16px;
-    min-height: 48px;
-    min-width: 48px;
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 0.75rem;
     display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 4px;
+    min-height: 60px;
     justify-content: center;
-    white-space: nowrap;
-}
-
-.nav-tab:hover {
-    color: var(--volt);
 }
 
 .nav-tab.active {
-    color: var(--volt);
-    border-bottom: 3px solid var(--volt);
-    background: linear-gradient(to top, rgba(210, 248, 0, 0.05), transparent);
+    background: rgba(200, 255, 0, 0.1);
+    border-bottom: none;
+    border-top: 3px solid var(--volt);
 }
+
+/* Spazio per contenuto sopra la bottom bar */
+.section-container,
+.content-wrapper,
+main {
+    padding-bottom: 80px !important;
+}
+
+
 
 /* Reset effetti indesiderati */
 .nav-tab,
@@ -75,7 +66,50 @@
 /* Desktop: dimensioni originali */
 @media (min-width: 1024px) {
     .nav-tab {
+        background: transparent;
+        color: var(--text-muted);
+        font-family: 'Teko', sans-serif;
+        border: none;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
         font-size: 1.2rem;
         padding: 10px 25px;
+        min-height: 48px;
+        min-width: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    .nav-tab:hover {
+        color: var(--volt);
+    }
+
+    .nav-tab.active {
+        color: var(--volt);
+        border-bottom: 3px solid var(--volt);
+        background: linear-gradient(to top, rgba(210, 248, 0, 0.05), transparent);
+    }
+
+    .nav-tabs {
+        display: flex;
+        justify-content: center;
+        background: var(--bg-card);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+        /* Mobile: layout ottimizzato per touch */
+        gap: 0;
+        /* Gap zero per massimizzare spazio tab */
+        padding: 8px 5px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        overflow-x: auto;
+        /* Scroll orizzontale se necessario */
+        -webkit-overflow-scrolling: touch;
+        /* Smooth scroll iOS */
     }
 }
