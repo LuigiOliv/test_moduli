@@ -60,30 +60,55 @@ function App() {
 
                     // B. Trova l'utente loggato
                     const email = firebaseUser.email;
-                    const existingUser = loadedUsers.find(u => u.email === email);
 
-                    // C. Logica di login/profilo
-                    if (existingUser) {
-                        // Utente Trovato: Completa il Login
-                        const userWithAdmin = { ...existingUser, isAdmin: email === ADMIN_EMAIL };
+                    // ✅ PRIMA: Controlla se esiste un profilo eliminato da recuperare
+                    const recoveredUser = await storage.recoverAccount(email, {
+                        avatar: firebaseUser.photoURL
+                    });
+
+                    if (recoveredUser) {
+                        // ✅ Profilo recuperato! Riconnetti automaticamente
+                        console.log('✅ Profilo recuperato:', recoveredUser);
+                        const userWithAdmin = { ...recoveredUser, isAdmin: email === ADMIN_EMAIL };
                         setCurrentUser(userWithAdmin);
                         storage.setCurrentUser(userWithAdmin);
 
-                        // D. Carica voti
                         const loadedVotes = await storage.getVotes();
                         setVotes(loadedVotes || []);
 
-                        // Gestione modali
-                        if (!existingUser.preferredRole) setShowRoleModal(true);
+                        // Ricarica users aggiornati
+                        const updatedUsers = await storage.getUsers();
+                        setUsers(updatedUsers);
+
+                        // Chiedi di reimpostare i ruoli
+                        setShowRoleModal(true);
 
                     } else {
-                        // Utente NON Trovato: Richiedi registrazione/claim
-                        // ✅ Ora users è già popolato grazie a setUsers() sopra
-                        setPendingEmail(email);
-                        setShowClaimModal(true);
-                    }
+                        // ✅ Nessun profilo da recuperare, logica normale
+                        const existingUser = loadedUsers.find(u => u.email === email);
 
-                } catch (error) {
+                        // C. Logica di login/profilo
+                        if (existingUser) {
+                            // Utente Trovato: Completa il Login
+                            const userWithAdmin = { ...existingUser, isAdmin: email === ADMIN_EMAIL };
+                            setCurrentUser(userWithAdmin);
+                            storage.setCurrentUser(userWithAdmin);
+
+                            // D. Carica voti
+                            const loadedVotes = await storage.getVotes();
+                            setVotes(loadedVotes || []);
+
+                            // Gestione modali
+                            if (!existingUser.preferredRole) setShowRoleModal(true);
+
+                        } else {
+                            // Utente NON Trovato: Richiedi registrazione/claim
+                            setPendingEmail(email);
+                            setShowClaimModal(true);
+                        }
+                    }  // ← Questa chiusura è per l'else del recoveredUser!
+
+                } catch (error) {  // ← Questa chiusura è per il try!
                     console.error('❌ Errore caricamento dati DOPO login:', error);
                     alert('Errore caricamento dati. Ricarica la pagina.');
                 } finally {
@@ -102,6 +127,11 @@ function App() {
     }, []);
 
     const handleLogin = (email) => {
+        console.log('🔍 handleLogin ricevuto:', email);
+        console.log('🔍 typeof email:', typeof email);
+        if (typeof email === 'object') {
+            console.error('❌ ERRORE: email è un oggetto!', email);
+        }
         const existingUser = users.find(u => u.email === email);
         if (existingUser) {
             const antonioProfiles = users.filter(u => u.email === email);
@@ -234,6 +264,60 @@ function App() {
         setCurrentUser(null);
         storage.setCurrentUser(null);
     };
+
+    const handleDeleteAccount = async () => {
+        console.log('🔍 handleDeleteAccount chiamato');
+        console.log('🔍 currentUser:', currentUser);
+
+        const confirm1 = window.confirm(
+            '⚠️ ATTENZIONE!\n\n' +
+            'Stai per disiscriverti e cancellare i tuoi dati.\n\n' +
+            'Cosa succederà:\n' +
+            '✓ I tuoi voti dati rimarranno\n' +
+            '✓ I voti ricevuti rimarranno\n' +
+            '✓ Il tuo playerId rimarrà\n' +
+            '✗ I tuoi dati personali verranno cancellati\n' +
+            '✗ Verrai disiscritto da tutte le partite\n\n' +
+            '💡 IMPORTANTE: Se ti registri di nuovo con la stessa email,\n' +
+            'ritroverai automaticamente il tuo profilo!\n\n' +
+            'Vuoi continuare?'
+        );
+
+        console.log('🔍 confirm1:', confirm1);
+        if (!confirm1) return;
+
+        const confirm2 = window.prompt(
+            `Per confermare, scrivi il tuo nome esatto: "${currentUser.name}"`
+        );
+
+        console.log('🔍 confirm2:', confirm2);
+        if (confirm2 !== currentUser.name) {
+            alert('❌ Nome non corretto. Eliminazione annullata.');
+            return;
+        }
+
+        console.log('🔍 Inizio eliminazione...');
+        try {
+            await storage.deleteAccount(currentUser.id);
+
+            alert(
+                '✓ Account disattivato con successo.\n\n' +
+                'I tuoi voti e statistiche rimangono nel sistema.\n' +
+                'Potrai riattivare il profilo registrandoti di nuovo con ' + currentUser.email
+            );
+
+            const { auth } = await import('../firebase.js');
+            const { signOut } = await import('firebase/auth');
+            await signOut(auth);
+
+            storage.setCurrentUser(null);
+            window.location.reload();
+        } catch (error) {
+            console.error('❌ Errore eliminazione account:', error);
+            alert('❌ Errore durante l\'eliminazione. Riprova o contatta l\'amministratore.');
+        }
+    };
+
 
     const handleVoteSubmit = async (playerId, ratings) => {
         const newVote = {
@@ -500,6 +584,7 @@ function App() {
                             setCurrentUser(updatedUser);
                             storage.setCurrentUser(updatedUser);
                         }}
+                        onDeleteAccount={handleDeleteAccount}
                     />
                 )}
             </div>

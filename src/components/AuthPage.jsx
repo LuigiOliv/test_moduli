@@ -10,7 +10,7 @@ export function LoginPage({ onLogin }) {
         setError(null);
         try {
             const user = await storage.handleLogin();
-            onLogin(user);
+            onLogin(user.email);  // ← Passa solo l'email, non l'oggetto intero
         } catch (e) {
             setError("Accesso fallito. Assicurati di usare un account autorizzato.");
             console.error(e);

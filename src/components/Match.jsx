@@ -76,7 +76,7 @@ export function MatchCard({ match, currentUser, users, onClick }) {
                 {match.status === 'VOTING' && match.score && (
                     <>
                         <div className="match-info">
-                            Gialli {match.score.giallo}-{match.score.verdi} Verdi
+                            Gialli {match.score.gialli} - {match.score.verdi} Verdi
                         </div>
                         <div className="match-info" style={{ fontSize: '0.75rem' }}>
                             🗳️ Vota entro domenica
@@ -86,7 +86,7 @@ export function MatchCard({ match, currentUser, users, onClick }) {
                 {match.status === 'COMPLETED' && match.score && (
                     <>
                         <div className="match-info">
-                            Gialli {match.score.gialli}-{match.score.verdi} Verdi
+                            Gialli {match.score.gialli} - {match.score.verdi} Verdi
                         </div>
                         <div className="match-info" style={{ fontSize: '0.75rem' }}>
                             🏆 {utils.getPlayerNameById(match.topScorer, users)}

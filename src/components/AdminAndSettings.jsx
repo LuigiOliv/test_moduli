@@ -13,7 +13,7 @@ import { RoleEditModal } from './Modals.jsx';
 // 1. SETTINGS PAGE (Impostazioni Utente)
 // =========================================================================
 
-function SettingsPage({ user, onUpdateUser }) {
+function SettingsPage({ user, onUpdateUser, onDeleteAccount }) {
     const [showSuccess, setShowSuccess] = useState(false);
     const [showRoleEdit, setShowRoleEdit] = useState(false);
     const [editingName, setEditingName] = useState(false);
@@ -138,24 +138,39 @@ function SettingsPage({ user, onUpdateUser }) {
                         ✏️ Modifica Ruoli
                     </button>
                 </div>
+                <div className="settings-group admin-danger-zone">
+                    <h3>⚠️ Zona Pericolosa</h3>
+                    <p>Questa azione cancellerà i tuoi dati personali ma conserverà i voti. Potrai recuperare il profilo rieffettuando il login con la stessa email.</p>
+                    <button
+                        className="btn btn-danger"
+                        onClick={onDeleteAccount}
+                    >
+                        🗑️ Elimina Account
+                    </button>
+                </div>
             </div>
 
-            {showSuccess && <div className="success-message">✓ Impostazioni aggiornate!</div>}
 
-            {showRoleEdit && (
-                <RoleEditModal
-                    user={user}
-                    onClose={() => setShowRoleEdit(false)}
-                    onSuccess={async () => {
-                        const updatedUser = await storage.getUsers().then(users => users.find(u => u.id === user.id));
-                        await onUpdateUser(updatedUser);
-                        setShowRoleEdit(false);
-                        setShowSuccess(true);
-                        setTimeout(() => setShowSuccess(false), 3000);
-                    }}
-                />
-            )}
-        </div>
+            {
+                showSuccess && <div className="success-message">✓ Impostazioni aggiornate!</div>
+            }
+
+            {
+                showRoleEdit && (
+                    <RoleEditModal
+                        user={user}
+                        onClose={() => setShowRoleEdit(false)}
+                        onSuccess={async () => {
+                            const updatedUser = await storage.getUsers().then(users => users.find(u => u.id === user.id));
+                            await onUpdateUser(updatedUser);
+                            setShowRoleEdit(false);
+                            setShowSuccess(true);
+                            setTimeout(() => setShowSuccess(false), 3000);
+                        }}
+                    />
+                )
+            }
+        </div >
     );
 }
 

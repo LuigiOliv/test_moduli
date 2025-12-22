@@ -604,3 +604,36 @@ RATING BUTTONS - MOBILE FIRST
         font-size: 1.4rem;
     }
 }
+
+.google-btn {
+    background: var(--volt);
+    color: black;
+    font-weight: 700;
+    border: none;
+    width: 100%;
+    text-transform: uppercase;
+    font-family: 'Roboto', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    /* Mobile: dimensione touch-friendly */
+    padding: 14px;
+    font-size: 1.05rem;
+    min-height: 52px;
+}
+
+.google-btn:hover,
+.google-btn:active {
+    background: white;
+    box-shadow: 0 0 15px white;
+}
+
+.google-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

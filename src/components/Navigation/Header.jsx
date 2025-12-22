@@ -5,6 +5,10 @@ import React, { useState } from 'react';
 import utils from '../../utils.js';
 
 function Header({ user, onLogout, onOpenSettings, setActiveTab }) {
+    console.log('🔍 Header received user:', user);
+    console.log('🔍 user.email:', user?.email);
+    console.log('🔍 typeof user:', typeof user);
+    console.log('🔍 user keys:', user ? Object.keys(user) : 'null');
     const [showMenu, setShowMenu] = useState(false);
 
     // CLAUSOLA DI PROTEZIONE (GUARD CLAUSE)
@@ -14,7 +18,6 @@ function Header({ user, onLogout, onOpenSettings, setActiveTab }) {
     if (!user) {
         return null; // Non renderizza l'header se non c'è utente
     }
-
     return (
         <div className="header">
             <div className="header-left">
@@ -31,7 +34,7 @@ function Header({ user, onLogout, onOpenSettings, setActiveTab }) {
                 </div>
                 <div onClick={() => setShowMenu(!showMenu)} style={{ cursor: 'pointer' }}>
                     <div className="user-name">{user.name}</div>
-                    <div className="user-email">{user.email}</div>
+                    <div className="user-email">{user.email || 'Email non disponibile'}</div>
                 </div>
                 <button
                     className="user-menu-btn"

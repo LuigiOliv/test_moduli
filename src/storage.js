@@ -268,6 +268,81 @@ const storage = {
         }
 
         return match;
+    },
+
+    // ============================================================================
+    // FUNZIONE ELIMINAZIONE ACCOUNT (Soft Delete con possibilità di recupero)
+    // ============================================================================
+
+    deleteAccount: async (userId) => {
+        const batch = writeBatch(db);
+
+        // Ottieni i dati correnti dell'utente
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        const userData = userDoc.data();
+
+        // 1. Trasforma l'utente in profilo "unclaimed" ma SALVA l'email per recupero
+        const userRef = doc(db, 'users', userId);
+        batch.update(userRef, {
+            claimed: false,
+            deletedEmail: userData.email,     // ← SALVA email per recupero futuro
+            email: null,                      // ← Rimuovi email visibile
+            avatar: null,
+            preferredRole: null,
+            otherRoles: [],
+            isAdmin: false,
+            deletedAt: Date.now()
+        });
+
+        // 2. Elimina le registrazioni alle partite (solo future/in corso)
+        const matchesSnapshot = await getDocs(collection(db, 'matches'));
+        for (const matchDoc of matchesSnapshot.docs) {
+            const registrationsSnapshot = await getDocs(
+                collection(db, 'matches', matchDoc.id, 'registrations')
+            );
+            registrationsSnapshot.docs.forEach(regDoc => {
+                if (regDoc.data().playerId === userId) {
+                    batch.delete(doc(db, 'matches', matchDoc.id, 'registrations', regDoc.id));
+                }
+            });
+        }
+
+        // 3. I voti DATI e RICEVUTI rimangono nel database
+        // Il playerId rimane invariato
+
+        // Esegui tutte le modifiche
+        await batch.commit();
+    },
+
+    // ============================================================================
+    // FUNZIONE RECUPERO ACCOUNT (Riattiva profilo eliminato)
+    // ============================================================================
+
+    recoverAccount: async (email, newData = {}) => {
+        // Cerca un profilo unclaimed con deletedEmail uguale all'email
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const deletedProfile = usersSnapshot.docs.find(docSnap => {
+            const data = docSnap.data();
+            return !data.claimed && data.deletedEmail === email;
+        });
+
+        if (deletedProfile) {
+            const profileData = deletedProfile.data();
+            const restoredUser = {
+                ...profileData,
+                claimed: true,
+                email: email,
+                deletedEmail: null,
+                deletedAt: null,
+                restoredAt: Date.now(),
+                ...newData  // Nuovi dati (avatar, displayName, etc.)
+            };
+
+            await updateDoc(doc(db, 'users', deletedProfile.id), restoredUser);
+            return { id: deletedProfile.id, ...restoredUser };
+        }
+
+        return null;
     }
 };
 
