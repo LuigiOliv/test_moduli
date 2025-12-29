@@ -1,7 +1,29 @@
-/**
- * 🧪 TEST VERSION - Modular CSS Entry Point
- * This replaces the monolithic styles.css
- */
+/*
+======================================================================
+==========CALCETTO RATING APP - STYLESHEET
+© 2025 Luigi Oliviero - Tutti i diritti riservati 
+Questo foglio di stile è protetto da copyright e leggi sulla proprietà intellettuale italiana ed europea. 
+È SEVERAMENTE VIETATO senza autorizzazione scritta: - Copiare, riprodurre o distribuire questo codice - 
+Modificare o creare opere derivate - Utilizzare per scopi commerciali - 
+Rimuovere o alterare questo avviso di copyright 
+
+Uso non autorizzato sarà perseguito legalmente. 
+Per licenze commerciali: luigi.oliviero@gmail.com 
+
+--- CALCETTO RATING APP - STYLESHEET 
+© 2025 Luigi Oliviero - All Rights Reserved 
+This stylesheet is protected by Italian and European copyright and intellectual property laws. 
+STRICTLY PROHIBITED without written authorization: - Copying, reproducing, or distributing this code - 
+Modifying or creating derivative works - Commercial use - 
+Removing or altering this copyright notice 
+
+Unauthorized use will be prosecuted. 
+For commercial licensing: luigi.oliviero@gmail.com 
+
+Version: 1.0 Mobile-First | Date: November 2025 Author: Luigi Oliviero 
+Project: Calcetto del Giovedì 
+================================================================================
+*/
 
 /* 1. BASE - Must load first */
 @import './base/variables.css';
