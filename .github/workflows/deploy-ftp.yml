@@ -34,4 +34,4 @@ jobs:
           local-dir: ./dist/
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           security: loose
-
+          dangerous-clean-slate: true
