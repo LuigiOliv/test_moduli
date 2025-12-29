@@ -1,7 +1,7 @@
 // src/components/Navigation/Header.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import utils from '../../utils.js';
 
 function Header({ user, onLogout, onOpenSettings, setActiveTab }) {
@@ -10,21 +10,56 @@ function Header({ user, onLogout, onOpenSettings, setActiveTab }) {
     console.log('🔍 typeof user:', typeof user);
     console.log('🔍 user keys:', user ? Object.keys(user) : 'null');
     const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef(null);
+
+    // ✅ Chiudi menu con ESC
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === 'Escape' && showMenu) {
+                setShowMenu(false);
+            }
+        };
+
+        if (showMenu) {
+            document.addEventListener('keydown', handleEsc);
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleEsc);
+        };
+    }, [showMenu]);
+
+    // ✅ Chiudi menu con click outside
+    useEffect(() => {
+        if (!showMenu) return;
+
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);  // Per mobile
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [showMenu]);
 
     // CLAUSOLA DI PROTEZIONE (GUARD CLAUSE)
-    // Se 'user' non è definito o è null, non renderizzare nulla o renderizza un placeholder vuoto.
-    // L'App.jsx (o index.html) dovrebbe già gestire il reindirizzamento ad AuthPage, 
-    // ma questa è una protezione extra.
     if (!user) {
-        return null; // Non renderizza l'header se non c'è utente
+        return null;
     }
+
     return (
         <div className="header">
             <div className="header-left">
                 <h1>⚽ Sport<span style={{ color: 'var(--volt)' }}>ivity</span></h1>
                 <p>Giocare con gli amici e sentirsi dentro Fifa!</p>
             </div>
-            <div className="user-info" style={{ position: 'relative' }}>
+            <div className="user-info" style={{ position: 'relative' }} ref={menuRef}>
                 <div
                     className="avatar"
                     style={{ cursor: 'pointer' }}

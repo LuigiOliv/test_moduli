@@ -66,16 +66,17 @@
 }
 
 .avatar-small {
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--electric-blue), var(--volt));
+    background: var(--bg-hover);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: black;
-    font-weight: 700;
-    font-size: 14px;
+    color: var(--volt);
+    border: 2px solid var(--volt);
+    font-weight: 600;
+    font-size: 12px;
     overflow: hidden;
     flex-shrink: 0;
 }
@@ -90,12 +91,13 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--electric-blue), var(--volt));
+    background: var(--bg-hover);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: black;
-    font-weight: 700;
+    color: var(--volt);
+    border: 2px solid var(--volt);
+    font-weight: 600;
     font-size: 12px;
     overflow: hidden;
     flex-shrink: 0;

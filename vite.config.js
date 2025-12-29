@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
+  base: '/calcetto/',  // ⚠️ Specifica per calcetto-app
   esbuild: {
     loader: 'jsx',
     include: /src\/.*\.jsx?$/,
@@ -16,8 +17,13 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5175,  // ⚠️ Mantieni porte diverse tra progetti
     strictPort: false,
+    host: '0.0.0.0',
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
   },
   build: {
     outDir: 'dist',

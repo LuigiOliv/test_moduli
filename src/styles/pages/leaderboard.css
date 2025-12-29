@@ -66,7 +66,6 @@
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.05);
     gap: 20px;
-    /* Ã°Å¸â€˜Ë† AGGIUNGI QUESTA */
 }
 
 .leaderboard-item:hover {
@@ -108,7 +107,6 @@
     display: grid;
     gap: 15px;
     margin-bottom: 30px;
-
     /* Mobile: 1 colonna */
     grid-template-columns: 1fr;
 }
@@ -127,12 +125,12 @@
         gap: 25px;
     }
 }
-
+/* Queste sono le card per macrocategoria */
 .rankings-macro-card {
     background: var(--bg-card);
     border-radius: 8px;
-    padding: 20px;
-    border: 2px solid transparent;
+    padding: 15px;
+    border: 1px solid transparent;
     transition: all 0.3s;
     cursor: pointer;
     position: relative;
@@ -146,28 +144,25 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: currentColor;
-    opacity: 0.5;
+    background: var(--volt);
+    /* ✅ Cambiato da currentColor */
+    opacity: 1;
+    /* ✅ Cambiato da 0.5 */
 }
 
 .rankings-macro-card:hover,
 .rankings-macro-card:active {
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-    border-color: currentColor;
+    border-color: var(--volt);
+    /* ✅ Cambiato da currentColor */
 }
 
-.rankings-macro-tecnica {
-    color: var(--hot-red);
-}
+.rankings-macro-tecnica {}
 
-.rankings-macro-tattica {
-    color: var(--electric-blue);
-}
+.rankings-macro-tattica {}
 
-.rankings-macro-fisica {
-    color: var(--volt);
-}
+.rankings-macro-fisica {}
 
 .rankings-macro-header {
     display: flex;
@@ -181,7 +176,7 @@
 }
 
 .rankings-macro-title {
-    color: white;
+    color: var(--volt);
     font-family: 'Teko', sans-serif;
     font-size: 1.5rem;
     font-weight: 600;
@@ -201,7 +196,7 @@
 }
 
 /* ============================================================================
-   CLASSIFICHE COMPACT - VISTA COMPATTA
+   CLASSIFICHE COMPACT - VISTA COMPATTA - classifiche per skill
    ============================================================================ */
 .rankings-compact-list {
     flex-direction: column;
@@ -211,8 +206,8 @@
 .rankings-compact-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
+    gap: 8px;
+    padding: 8px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 6px;
     transition: all 0.2s;
@@ -225,13 +220,14 @@
 }
 
 /* Grid Skill */
-
+.rankings-skills-section {
+    max-width: 100%; /* ✅ NUOVO: Limita larghezza */
+    margin: 0 auto;
+}
 .rankings-skills-grid {
     display: grid;
     gap: 12px;
-
-    /* Mobile: 1 colonna */
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* Mobile: 1 colonna */
 }
 
 /* Tablet */
@@ -257,6 +253,8 @@
     padding: 15px;
     transition: all 0.3s;
     cursor: pointer;
+    position: relative;
+        overflow: hidden;
 }
 
 .rankings-skill-card:hover,

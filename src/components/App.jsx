@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { auth } from '../firebase.js';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import storage from '../storage.js';
 import utils from '../utils.js';  // ← AGGIUNGI QUESTA RIGA
 import { ADMIN_EMAIL } from '../constants.js';
@@ -27,6 +27,24 @@ function App() {
             sessionStorage.removeItem('pendingEmail');
         }
     };
+
+    // ✅ NUOVO: Gestisci il ritorno dal redirect di Google
+    useEffect(() => {
+        const checkRedirectResult = async () => {
+            try {
+                const result = await getRedirectResult(auth);
+                if (result?.user) {
+                    console.log('✅ Login completato dopo redirect');
+                    // Il resto viene gestito da onAuthStateChanged
+                }
+            } catch (error) {
+                console.error('❌ Errore redirect login:', error);
+                alert('Errore durante il login: ' + error.message);
+            }
+        };
+
+        checkRedirectResult();
+    }, []);
 
     const [currentUser, setCurrentUser] = useState(storage.getCurrentUser());
     const [activeTab, setActiveTab] = useState('partite');

@@ -62,18 +62,29 @@ const storage = {
     clearAll: () => {
         localStorage.removeItem('calcetto_current_user');
     },
+
+    // ✅ Login intelligente: popup desktop, redirect mobile
     handleLogin: async () => {
         const { auth } = await import('./firebase.js');
-        const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+        const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } = await import('firebase/auth');
 
         const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
 
-        return {
-            email: result.user.email,
-            displayName: result.user.displayName,
-            photoURL: result.user.photoURL
-        };
+        // Rileva se è mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            // Mobile: usa redirect
+            await signInWithRedirect(auth, provider);
+        } else {
+            // Desktop: usa popup (funziona con localhost)
+            const result = await signInWithPopup(auth, provider);
+            return {
+                email: result.user.email,
+                displayName: result.user.displayName,
+                photoURL: result.user.photoURL
+            };
+        }
     },
 
 
