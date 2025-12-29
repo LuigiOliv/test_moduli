@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Import styles
-import './styles.css';
+import './styles/index.css';
 
 // Initialize Firebase FIRST (import and use to prevent tree-shaking)
 import { db, auth } from './firebase.js';
