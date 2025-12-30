@@ -29,6 +29,21 @@
     border-color: #6B7280;
 }
 
+/* Cancelled match badge */
+.match-status.cancelled {
+    background: rgba(239, 68, 68, 0.15);
+    color: #EF4444;
+    border: 2px solid #DC2626;
+}
+
+/* Cancellation reason display */
+.cancellation-reason {
+    display: block;
+    font-size: 0.85rem;
+    color: #EF4444;
+    font-style: italic;
+}
+
 .role-badges {
     display: flex;
     flex-direction: column;

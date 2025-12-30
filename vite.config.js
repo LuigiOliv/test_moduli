@@ -20,10 +20,10 @@ export default defineConfig({
     port: 5175,  // ⚠️ Mantieni porte diverse tra progetti
     strictPort: false,
     host: '0.0.0.0',
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
+    //headers: {
+    // 'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    //  'Cross-Origin-Embedder-Policy': 'require-corp',
+    //},
   },
   build: {
     outDir: 'dist',

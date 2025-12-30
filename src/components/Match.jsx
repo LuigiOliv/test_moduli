@@ -28,6 +28,11 @@ export function MatchCard({ match, currentUser, users, onClick }) {
     };
 
     const getStatusBadge = () => {
+        // ✅ NUOVO: Badge per partite annullate
+        if (match.status === 'CANCELLED') {
+            return { text: '❌ ANNULL.', class: 'cancelled' };
+        }
+
         if (match.status === 'OPEN' || match.status === 'CLOSED') {
             return { text: '📝 APERTA', class: 'open' };
         }
@@ -89,9 +94,14 @@ export function MatchCard({ match, currentUser, users, onClick }) {
                             Gialli {match.score.gialli} - {match.score.verdi} Verdi
                         </div>
                         <div className="match-info" style={{ fontSize: '0.75rem' }}>
-                            🏆 {utils.getPlayerNameById(match.topScorer, users)}
+                            Top scorer: 🏆 {utils.getPlayerNameById(match.topScorer, users)}
                         </div>
                     </>
+                )}
+                {match.status === 'CANCELLED' && match.cancellationReason && (
+                    <span className="cancellation-reason">
+                        Motivo: {match.cancellationReason}
+                    </span>
                 )}
             </div>
         </div>

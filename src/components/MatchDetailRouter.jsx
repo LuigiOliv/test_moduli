@@ -67,6 +67,28 @@ function MatchDetailRouter({ matchId, currentUser, onBack }) {
         );
     }
 
+    // ✅ NUOVO: Vista per partite annullate
+    if (match.status === 'CANCELLED') {
+        return (
+            <div className="match-cancelled-view">
+                <div className="cancelled-message">
+                    <h2>❌ Partita Annullata</h2>
+                    <p>Questa partita è stata annullata e non si svolgerà.</p>
+                    {match.cancellationReason && (
+                        <div className="cancellation-details">
+                            <strong>Motivo:</strong> {match.cancellationReason}
+                        </div>
+                    )}
+                    {match.cancelledAt && (
+                        <div className="cancellation-date">
+                            Annullata il: {new Date(match.cancelledAt).toLocaleString('it-IT')}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     // Router: quale vista mostrare in base allo status?
     if (match.status === 'OPEN' || match.status === 'CLOSED') {
         return (

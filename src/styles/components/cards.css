@@ -149,7 +149,43 @@
     background: #6B7280;
 }
 
+/* ✅ AGGIUNTO: Bordino rosso per partite annullate */
+.match-card.cancelled::before {
+    background: #DC2626;
+}
 
+.match-cancelled-view {
+    padding: 2rem;
+    text-align: center;
+}
+
+.cancelled-message {
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid #DC2626;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.cancelled-message h2 {
+    color: #EF4444;
+    margin-bottom: 1rem;
+}
+
+.cancellation-details {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    text-align: left;
+}
+
+.cancellation-date {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+}
 
 
 /* ============================================================================

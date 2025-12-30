@@ -392,6 +392,58 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
         }
     };
 
+    // ✅ NUOVO: Annulla partita
+    const handleCancelMatch = async (matchId) => {
+        const reason = prompt('Motivo annullamento (opzionale, es: "Maltempo"):\n\nLascia vuoto per nessun motivo.');
+
+        if (!confirm('⚠️ Annullare questa partita?\n\nLe iscrizioni verranno mantenute ma la partita non sarà giocabile.')) {
+            return;
+        }
+
+        try {
+            const currentUser = storage.getCurrentUser(); // ✅ AGGIUNTO
+
+            await storage.updateMatch(matchId, {
+                status: 'CANCELLED',
+                cancellationReason: reason || null,
+                cancelledAt: Date.now(),
+                cancelledBy: currentUser.id,
+                manualOverride: true,
+                manualOverrideUntil: Date.now() + (365 * 24 * 60 * 60 * 1000) // 1 anno
+            });
+
+            await loadAdminMatches();
+            alert('✅ Partita annullata con successo');
+        } catch (error) {
+            console.error('Errore annullamento partita:', error);
+            alert('❌ Errore durante l\'annullamento');
+        }
+    };
+
+    // ✅ NUOVO: Riapri partita annullata
+    const handleReopenCancelledMatch = async (matchId) => {
+        if (!confirm('Riaprire questa partita annullata?\n\nLa partita tornerà allo stato APERTA con le iscrizioni originali.')) {
+            return;
+        }
+
+        try {
+            await storage.updateMatch(matchId, {
+                status: 'OPEN',
+                cancellationReason: null,
+                cancelledAt: null,
+                cancelledBy: null,
+                manualOverride: false,
+                manualOverrideUntil: null
+            });
+
+            await loadAdminMatches();
+            alert('✅ Partita riaperta con successo');
+        } catch (error) {
+            console.error('Errore riapertura partita:', error);
+            alert('❌ Errore durante la riapertura');
+        }
+    };
+
     const handleEditMaxPlayers = (matchId, currentMax) => {
         setEditingMaxPlayers(matchId);
         setNewMaxPlayers(currentMax.toString());
@@ -828,14 +880,14 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
     const handleAddPlayer = async () => {
         const newName = prompt('Nome del nuovo giocatore:');
         if (!newName || !newName.trim()) return;
-        const newPlayer = { 
+        const newPlayer = {
             id: utils.generatePlayerId(users),  // ← CAMBIA QUESTA RIGA
-            name: newName.trim(), 
-            avatar: null, 
-            preferredRole: null, 
-            otherRoles: [], 
-            email: null, 
-            claimed: false, 
+            name: newName.trim(),
+            avatar: null,
+            preferredRole: null,
+            otherRoles: [],
+            email: null,
+            claimed: false,
             isAdmin: false,
             isInitialPlayer: false,
             hasVotedOffline: false,
@@ -940,6 +992,7 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                                         {match.status === 'CLOSED' && '🔒 CHIUSA'}
                                         {match.status === 'VOTING' && '⭐ VOTAZIONI'}
                                         {match.status === 'COMPLETED' && '✅ FINITA'}
+                                        {match.status === 'CANCELLED' && '❌ ANNULL.'}
                                     </span>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <span className="admin-match-date">{utils.formatMatchDate(match.date)}</span>
@@ -1087,6 +1140,27 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                                             onClick={() => handleReopenRegistrations(match.id)}
                                         >
                                             🔙 Riapri Partita
+                                        </button>
+                                    )}
+                                    {/* ✅ NUOVO: Bottone Annulla per partite OPEN o CLOSED */}
+                                    {(match.status === 'OPEN' || match.status === 'CLOSED') && (
+                                        <button
+                                            className="admin-action-btn danger"
+                                            onClick={() => handleCancelMatch(match.id)}
+                                            title="Annulla partita per maltempo o altri motivi"
+                                        >
+                                            ❌ Annulla Partita
+                                        </button>
+                                    )}
+
+                                    {/* ✅ NUOVO: Bottone Riapri per partite CANCELLED */}
+                                    {match.status === 'CANCELLED' && (
+                                        <button
+                                            className="admin-action-btn success"
+                                            onClick={() => handleReopenCancelledMatch(match.id)}
+                                            title="Riapri partita annullata"
+                                        >
+                                            🔓 Riapri Partita
                                         </button>
                                     )}
                                     <button

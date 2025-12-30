@@ -33,7 +33,7 @@ function MatchesPage({ currentUser, users = [], onSelectMatch }) {
     return (
         <div className="section-container">
             <div className="section-header">
-                <h2>🏆 Le Tue Partite</h2>
+                <h2>🏆 Le Prossime Partite</h2>
             </div>
 
             {loading ? (
