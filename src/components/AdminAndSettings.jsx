@@ -195,6 +195,8 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
     const [newMatchMaxPlayers, setNewMatchMaxPlayers] = useState(18);
     const [adminMatches, setAdminMatches] = useState([]);
     const [adminRegistrations, setAdminRegistrations] = useState({});
+    const [activeTab, setActiveTab] = useState('matches'); // Tab di default: Partite
+    const [showPastMatches, setShowPastMatches] = useState(false); // Toggle match passati
 
     // STATI PER ASSEGNAZIONE SQUADRE E RISULTATO
     const [showTeamAssignment, setShowTeamAssignment] = useState(false);
@@ -913,361 +915,389 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
 
             {showSuccess && <div className="success-message">✓ {successMessage}</div>}
 
-            <div className="settings-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h3>🏆 Gestione Partite</h3>
-                    <button className="btn btn-primary" onClick={() => setShowCreateMatch(!showCreateMatch)}>
-                        {showCreateMatch ? '✕ Annulla' : '+ Crea Partita'}
-                    </button>
-                </div>
-
-                {showCreateMatch && (
-                    <div className="admin-create-match">
-                        <h4>Crea Nuova Partita</h4>
-
-                        <div className="form-group">
-                            <label>Data Partita *</label>
-                            <input
-                                type="date"
-                                value={newMatchDate}
-                                onChange={(e) => setNewMatchDate(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Orario *</label>
-                            <input
-                                type="time"
-                                value={newMatchTime}
-                                onChange={(e) => setNewMatchTime(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Location *</label>
-                            <input
-                                type="text"
-                                value={newMatchLocation}
-                                onChange={(e) => setNewMatchLocation(e.target.value)}
-                                placeholder="Es: Campo SuperSantos, Portici"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Max Giocatori (numero pari: 10, 12, 14, 16, 18, 20)</label>
-                            <select
-                                value={newMatchMaxPlayers}
-                                onChange={(e) => setNewMatchMaxPlayers(e.target.value)}
-                            >
-                                <option value="10">10 giocatori (5 vs 5)</option>
-                                <option value="12">12 giocatori (6 vs 6)</option>
-                                <option value="14">14 giocatori (7 vs 7)</option>
-                                <option value="16">16 giocatori (8 vs 8)</option>
-                                <option value="18">18 giocatori (9 vs 9)</option>
-                                <option value="20">20 giocatori (10 vs 10)</option>
-                            </select>
-                        </div>
-
-                        <button
-                            className="btn btn-primary"
-                            onClick={handleCreateMatch}
-                            disabled={!newMatchDate || !newMatchTime || !newMatchLocation}
-                        >
-                            ✓ Crea Partita
-                        </button>
-                    </div>
-                )}
-
-                <div className="admin-matches-list">
-                    {adminMatches.map(match => {
-                        const regs = adminRegistrations[match.id] || [];
-                        const hasTeams = match.teams && (match.teams.gialli.length > 0 || match.teams.verdi.length > 0);
-                        const canEdit = match.status === 'OPEN'; // Only OPEN matches can be edited
-
-                        return (
-                            <div key={match.id} className="admin-match-item">
-                                <div className="admin-match-header">
-                                    <span className={`match-status ${match.status.toLowerCase()}`}>
-                                        {match.status === 'OPEN' && '📝 APERTA'}
-                                        {match.status === 'CLOSED' && '🔒 CHIUSA'}
-                                        {match.status === 'VOTING' && '⭐ VOTAZIONI'}
-                                        {match.status === 'COMPLETED' && '✅ FINITA'}
-                                        {match.status === 'CANCELLED' && '❌ ANNULL.'}
-                                    </span>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <span className="admin-match-date">{utils.formatMatchDate(match.date)}</span>
-                                        {canEdit && (
-                                            <button
-                                                onClick={() => handleEditMatchInfo(match)}
-                                                style={{
-                                                    background: 'var(--volt)',
-                                                    border: 'none',
-                                                    padding: '4px 8px',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    color: 'var(--bg-deep)',
-                                                    fontSize: '12px',
-                                                    fontWeight: 'bold'
-                                                }}
-                                                title="Modifica data/ora/location"
-                                            >
-                                                ✏️ Modifica
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="admin-match-info">
-                                    <span>📍 {match.location}</span>
-                                    {editingMaxPlayers === match.id ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span>👥</span>
-                                            <select
-                                                value={newMaxPlayers}
-                                                onChange={(e) => setNewMaxPlayers(e.target.value)}
-                                                style={{
-                                                    background: 'var(--bg-deep)',
-                                                    color: 'white',
-                                                    border: '1px solid var(--volt)',
-                                                    padding: '4px 8px',
-                                                    borderRadius: '4px',
-                                                    fontSize: '13px'
-                                                }}
-                                            >
-                                                <option value="10">10</option>
-                                                <option value="12">12</option>
-                                                <option value="14">14</option>
-                                                <option value="16">16</option>
-                                                <option value="18">18</option>
-                                                <option value="20">20</option>
-                                            </select>
-                                            <button
-                                                onClick={() => handleSaveMaxPlayers(match.id)}
-                                                style={{
-                                                    background: '#48bb78',
-                                                    border: 'none',
-                                                    padding: '4px 8px',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    color: 'white',
-                                                    fontSize: '12px'
-                                                }}
-                                            >
-                                                ✓
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setEditingMaxPlayers(null);
-                                                    setNewMaxPlayers('');
-                                                }}
-                                                style={{
-                                                    background: '#718096',
-                                                    border: 'none',
-                                                    padding: '4px 8px',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    color: 'white',
-                                                    fontSize: '12px'
-                                                }}
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <span
-                                            onClick={() => canEdit && handleEditMaxPlayers(match.id, match.maxPlayers)}
-                                            style={{
-                                                cursor: canEdit ? 'pointer' : 'default',
-                                                textDecoration: canEdit ? 'underline' : 'none'
-                                            }}
-                                            title={canEdit ? "Click per modificare" : ""}
-                                        >
-                                            👥 {regs.length}/{match.maxPlayers}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div className="admin-match-actions">
-                                    {match.status === 'OPEN' && (
-                                        <button
-                                            className="admin-action-btn close"
-                                            onClick={() => handleCloseRegistrations(match.id)}
-                                        >
-                                            🔒 Chiudi Iscrizioni
-                                        </button>
-                                    )}
-                                    {match.status === 'CLOSED' && (
-                                        <>
-                                            <button
-                                                className="admin-action-btn reopen"
-                                                onClick={() => handleReopenRegistrations(match.id)}
-                                            >
-                                                🔓 Riapri Iscrizioni
-                                            </button>
-                                            <button
-                                                className="admin-action-btn assign"
-                                                onClick={() => handleOpenTeamAssignment(match.id)}
-                                            >
-                                                👥 Assegna Squadre
-                                            </button>
-                                            <button
-                                                className="admin-action-btn score"
-                                                onClick={() => handleOpenScoreModal(match.id)}
-                                            >
-                                                ⚽ Inserisci Risultato
-                                            </button>
-                                        </>
-                                    )}
-                                    {match.status === 'VOTING' && (
-                                        <>
-                                            <button
-                                                className="admin-action-btn reopen"
-                                                onClick={() => handleReopenRegistrations(match.id)}
-                                            >
-                                                🔙 Torna a Iscrizioni
-                                            </button>
-                                            <button
-                                                className="admin-action-btn score"
-                                                onClick={() => handleOpenScoreModal(match.id)}
-                                            >
-                                                ⚽ Inserisci Risultato
-                                            </button>
-                                        </>
-                                    )}
-                                    {match.status === 'COMPLETED' && (
-                                        <button
-                                            className="admin-action-btn reopen"
-                                            onClick={() => handleReopenRegistrations(match.id)}
-                                        >
-                                            🔙 Riapri Partita
-                                        </button>
-                                    )}
-                                    {/* ✅ NUOVO: Bottone Annulla per partite OPEN o CLOSED */}
-                                    {(match.status === 'OPEN' || match.status === 'CLOSED') && (
-                                        <button
-                                            className="admin-action-btn danger"
-                                            onClick={() => handleCancelMatch(match.id)}
-                                            title="Annulla partita per maltempo o altri motivi"
-                                        >
-                                            ❌ Annulla Partita
-                                        </button>
-                                    )}
-
-                                    {/* ✅ NUOVO: Bottone Riapri per partite CANCELLED */}
-                                    {match.status === 'CANCELLED' && (
-                                        <button
-                                            className="admin-action-btn success"
-                                            onClick={() => handleReopenCancelledMatch(match.id)}
-                                            title="Riapri partita annullata"
-                                        >
-                                            🔓 Riapri Partita
-                                        </button>
-                                    )}
-                                    <button
-                                        className="admin-action-btn delete"
-                                        onClick={() => handleDeleteMatch(match.id)}
-                                    >
-                                        🗑️ Elimina
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+            <div className="admin-tabs-nav" style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                <button
+                    className={`admin-tab-btn${activeTab === 'matches' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('matches')}
+                >
+                    🏆 Partite
+                </button>
+                <button
+                    className={`admin-tab-btn${activeTab === 'players' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('players')}
+                >
+                    👥 Giocatori
+                </button>
+                <button
+                    className={`admin-tab-btn${activeTab === 'system' ? ' active' : ''}`}
+                    onClick={() => setActiveTab('system')}
+                >
+                    ⚙️ Sistema
+                </button>
             </div>
-
-            <div className="settings-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h3 style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => setShowPlayersList(!showPlayersList)}>
-                        {showPlayersList ? '▼' : '▶'} 👥 Gestione Giocatori ({users.filter(u => !u.id.startsWith('seed')).length})
-                    </h3>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        {showPlayersList && <button className="btn btn-primary" onClick={handleAddPlayer}>+ Aggiungi</button>}
-                        <button className="btn btn-secondary" onClick={() => setShowPlayersList(!showPlayersList)}>
-                            {showPlayersList ? 'Comprimi' : 'Espandi'}
+            {activeTab === 'matches' && (
+                <div className="settings-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3>🏆 Gestione Partite</h3>
+                        <button className="btn btn-primary" onClick={() => setShowCreateMatch(!showCreateMatch)}>
+                            {showCreateMatch ? '✕ Annulla' : '+ Crea Partita'}
                         </button>
                     </div>
-                </div>
+                    {showCreateMatch && (
+                        <div className="admin-create-match">
+                            <h4>Crea Nuova Partita</h4>
 
-                {showPlayersList && (
-                    <div className="admin-player-list">
-                        {users.filter(u => !u.id.startsWith('seed')).map((player, index) => {
-                            const voteCount = utils.countVotes(player.id, votes);
-                            const averages = utils.calculateAverages(player.id, votes);
-                            const overall = utils.calculateOverall(averages);
+                            <div className="form-group">
+                                <label>Data Partita *</label>
+                                <input
+                                    type="date"
+                                    value={newMatchDate}
+                                    onChange={(e) => setNewMatchDate(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Orario *</label>
+                                <input
+                                    type="time"
+                                    value={newMatchTime}
+                                    onChange={(e) => setNewMatchTime(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Location *</label>
+                                <input
+                                    type="text"
+                                    value={newMatchLocation}
+                                    onChange={(e) => setNewMatchLocation(e.target.value)}
+                                    placeholder="Es: Campo SuperSantos, Portici"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Max Giocatori (numero pari: 10, 12, 14, 16, 18, 20)</label>
+                                <select
+                                    value={newMatchMaxPlayers}
+                                    onChange={(e) => setNewMatchMaxPlayers(e.target.value)}
+                                >
+                                    <option value="10">10 giocatori (5 vs 5)</option>
+                                    <option value="12">12 giocatori (6 vs 6)</option>
+                                    <option value="14">14 giocatori (7 vs 7)</option>
+                                    <option value="16">16 giocatori (8 vs 8)</option>
+                                    <option value="18">18 giocatori (9 vs 9)</option>
+                                    <option value="20">20 giocatori (10 vs 10)</option>
+                                </select>
+                            </div>
+
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleCreateMatch}
+                                disabled={!newMatchDate || !newMatchTime || !newMatchLocation}
+                            >
+                                ✓ Crea Partita
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="admin-matches-list">
+                        {adminMatches.map(match => {
+                            const regs = adminRegistrations[match.id] || [];
+                            const hasTeams = match.teams && (match.teams.gialli.length > 0 || match.teams.verdi.length > 0);
+                            const canEdit = match.status === 'OPEN'; // Only OPEN matches can be edited
 
                             return (
-                                <div key={player.id} className="admin-player-item">
-                                    <span style={{ color: '#a0aec0', width: '25px' }}>{index + 1}.</span>
-
-                                    {editingPlayer === player.id ? (
-                                        <div style={{ display: 'flex', gap: '10px', flex: 1 }}>
-                                            <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="admin-input" autoFocus />
-                                            <button onClick={() => handleSaveName(player.id)} className="admin-btn btn-save">✓</button>
-                                            <button onClick={() => setEditingPlayer(null)} className="admin-btn btn-cancel">✕</button>
+                                <div key={match.id} className="admin-match-item">
+                                    <div className="admin-match-header">
+                                        <span className={`match-status ${match.status.toLowerCase()}`}>
+                                            {match.status === 'OPEN' && '📝 APERTA'}
+                                            {match.status === 'CLOSED' && '🔒 CHIUSA'}
+                                            {match.status === 'VOTING' && '⭐ VOTAZIONI'}
+                                            {match.status === 'COMPLETED' && '✅ FINITA'}
+                                            {match.status === 'CANCELLED' && '❌ ANNULL.'}
+                                        </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span className="admin-match-date">{utils.formatMatchDate(match.date)}</span>
+                                            {canEdit && (
+                                                <button
+                                                    onClick={() => handleEditMatchInfo(match)}
+                                                    style={{
+                                                        background: 'var(--volt)',
+                                                        border: 'none',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        color: 'var(--bg-deep)',
+                                                        fontSize: '12px',
+                                                        fontWeight: 'bold'
+                                                    }}
+                                                    title="Modifica data/ora/location"
+                                                >
+                                                    ✏️ Modifica
+                                                </button>
+                                            )}
                                         </div>
-                                    ) : (
-                                        <>
-                                            <span style={{ fontWeight: '600', minWidth: '140px' }}>{player.name}</span>
-                                            <span style={{ color: '#718096', fontSize: '13px', flex: 1 }}>{player.claimed ? `✓ ${player.email}` : '○ Non reclamato'}</span>
-                                            <span style={{ color: '#667eea', fontSize: '13px' }}>OVR: {overall ? utils.toBase10(overall).toFixed(2) : '-'} ({voteCount} voti)</span>
-                                            <div style={{ display: 'flex', gap: '6px' }}>
-                                                <button onClick={() => handleEditName(player)} className="admin-btn">✏️</button>
-                                                <button onClick={() => handleEditVotes(player)} className="admin-btn btn-chart">📊</button>
-                                                <button onClick={() => handleDeletePlayer(player.id)} className="admin-btn btn-delete">🗑️</button>
+                                    </div>
+
+                                    <div className="admin-match-info">
+                                        <span>📍 {match.location}</span>
+                                        {editingMaxPlayers === match.id ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span>👥</span>
+                                                <select
+                                                    value={newMaxPlayers}
+                                                    onChange={(e) => setNewMaxPlayers(e.target.value)}
+                                                    style={{
+                                                        background: 'var(--bg-deep)',
+                                                        color: 'white',
+                                                        border: '1px solid var(--volt)',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '4px',
+                                                        fontSize: '13px'
+                                                    }}
+                                                >
+                                                    <option value="10">10</option>
+                                                    <option value="12">12</option>
+                                                    <option value="14">14</option>
+                                                    <option value="16">16</option>
+                                                    <option value="18">18</option>
+                                                    <option value="20">20</option>
+                                                </select>
+                                                <button
+                                                    onClick={() => handleSaveMaxPlayers(match.id)}
+                                                    style={{
+                                                        background: '#48bb78',
+                                                        border: 'none',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        color: 'white',
+                                                        fontSize: '12px'
+                                                    }}
+                                                >
+                                                    ✓
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingMaxPlayers(null);
+                                                        setNewMaxPlayers('');
+                                                    }}
+                                                    style={{
+                                                        background: '#718096',
+                                                        border: 'none',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        color: 'white',
+                                                        fontSize: '12px'
+                                                    }}
+                                                >
+                                                    ✕
+                                                </button>
                                             </div>
-                                        </>
-                                    )}
+                                        ) : (
+                                            <span
+                                                onClick={() => canEdit && handleEditMaxPlayers(match.id, match.maxPlayers)}
+                                                style={{
+                                                    cursor: canEdit ? 'pointer' : 'default',
+                                                    textDecoration: canEdit ? 'underline' : 'none'
+                                                }}
+                                                title={canEdit ? "Click per modificare" : ""}
+                                            >
+                                                👥 {regs.length}/{match.maxPlayers}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="admin-match-actions">
+                                        {match.status === 'OPEN' && (
+                                            <button
+                                                className="admin-action-btn close"
+                                                onClick={() => handleCloseRegistrations(match.id)}
+                                            >
+                                                🔒 Chiudi Iscrizioni
+                                            </button>
+                                        )}
+                                        {match.status === 'CLOSED' && (
+                                            <>
+                                                <button
+                                                    className="admin-action-btn reopen"
+                                                    onClick={() => handleReopenRegistrations(match.id)}
+                                                >
+                                                    🔓 Riapri Iscrizioni
+                                                </button>
+                                                <button
+                                                    className="admin-action-btn assign"
+                                                    onClick={() => handleOpenTeamAssignment(match.id)}
+                                                >
+                                                    👥 Assegna Squadre
+                                                </button>
+                                                <button
+                                                    className="admin-action-btn score"
+                                                    onClick={() => handleOpenScoreModal(match.id)}
+                                                >
+                                                    ⚽ Inserisci Risultato
+                                                </button>
+                                            </>
+                                        )}
+                                        {match.status === 'VOTING' && (
+                                            <>
+                                                <button
+                                                    className="admin-action-btn reopen"
+                                                    onClick={() => handleReopenRegistrations(match.id)}
+                                                >
+                                                    🔙 Torna a Iscrizioni
+                                                </button>
+                                                <button
+                                                    className="admin-action-btn score"
+                                                    onClick={() => handleOpenScoreModal(match.id)}
+                                                >
+                                                    ⚽ Inserisci Risultato
+                                                </button>
+                                            </>
+                                        )}
+                                        {match.status === 'COMPLETED' && (
+                                            <button
+                                                className="admin-action-btn reopen"
+                                                onClick={() => handleReopenRegistrations(match.id)}
+                                            >
+                                                🔙 Riapri Partita
+                                            </button>
+                                        )}
+                                        {/* ✅ NUOVO: Bottone Annulla per partite OPEN o CLOSED */}
+                                        {(match.status === 'OPEN' || match.status === 'CLOSED') && (
+                                            <button
+                                                className="admin-action-btn danger"
+                                                onClick={() => handleCancelMatch(match.id)}
+                                                title="Annulla partita per maltempo o altri motivi"
+                                            >
+                                                ❌ Annulla Partita
+                                            </button>
+                                        )}
+
+                                        {/* ✅ NUOVO: Bottone Riapri per partite CANCELLED */}
+                                        {match.status === 'CANCELLED' && (
+                                            <button
+                                                className="admin-action-btn success"
+                                                onClick={() => handleReopenCancelledMatch(match.id)}
+                                                title="Riapri partita annullata"
+                                            >
+                                                🔓 Riapri Partita
+                                            </button>
+                                        )}
+                                        <button
+                                            className="admin-action-btn delete"
+                                            onClick={() => handleDeleteMatch(match.id)}
+                                        >
+                                            🗑️ Elimina
+                                        </button>
+                                    </div>
                                 </div>
                             );
                         })}
                     </div>
-                )}
-            </div>
-
-            <div className="settings-group">
-                <h3>💾 Backup Database</h3>
-                <p>Esporta o importa tutti i dati (utenti e voti) per fare backup o ripristinare</p>
-                <div style={{ display: 'flex', gap: '15px', marginTop: '15px' }}>
-                    <button className="btn btn-primary" onClick={() => {
-                        const data = { users, votes, timestamp: Date.now(), date: new Date().toISOString() };
-                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `calcetto_backup_${new Date().toISOString().split('T')[0]}.json`;
-                        a.click();
-                        showSuccessMsg('Backup esportato!');
-                    }}>📥 Esporta Backup</button>
-                    <button className="btn btn-secondary" onClick={() => {
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.accept = '.json';
-                        input.onchange = async (e) => {
-                            try {
-                                const file = e.target.files[0];
-                                const text = await file.text();
-                                const data = JSON.parse(text);
-                                if (!confirm('⚠️ ATTENZIONE: Questo sovrascriverà tutti i dati attuali. Continuare?')) return;
-                                if (data.users) await storage.setUsers(data.users);
-                                if (data.votes) await storage.setVotes(data.votes);
-                                showSuccessMsg('Backup importato!');
-                                setTimeout(() => window.location.reload(), 1000);
-                            } catch (err) {
-                                alert('Errore durante l\'importazione: ' + err.message);
-                            }
-                        };
-                        input.click();
-                    }}>📤 Importa Backup</button>
                 </div>
-            </div>
+            )}
 
-            <div className="settings-group admin-danger-zone">
-                <h3>⚠️ Zona Pericolosa</h3>
-                <p>Azioni irreversibili!</p>
-                <button className="btn btn-danger" onClick={handleFullReset}>🗑️ Reset Completo</button>
-            </div>
+            {activeTab === 'players' && (
+                <div className="settings-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3 style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => setShowPlayersList(!showPlayersList)}>
+                            {showPlayersList ? '▼' : '▶'} 👥 Gestione Giocatori ({users.filter(u => !u.id.startsWith('seed')).length})
+                        </h3>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            {showPlayersList && <button className="btn btn-primary" onClick={handleAddPlayer}>+ Aggiungi</button>}
+                            <button className="btn btn-secondary" onClick={() => setShowPlayersList(!showPlayersList)}>
+                                {showPlayersList ? 'Comprimi' : 'Espandi'}
+                            </button>
+                        </div>
+                    </div>
 
+                    {showPlayersList && (
+                        <div className="admin-player-list">
+                            {users.filter(u => !u.id.startsWith('seed')).map((player, index) => {
+                                const voteCount = utils.countVotes(player.id, votes);
+                                const averages = utils.calculateAverages(player.id, votes);
+                                const overall = utils.calculateOverall(averages);
+
+                                return (
+                                    <div key={player.id} className="admin-player-item">
+                                        <span style={{ color: '#a0aec0', width: '25px' }}>{index + 1}.</span>
+
+                                        {editingPlayer === player.id ? (
+                                            <div style={{ display: 'flex', gap: '10px', flex: 1 }}>
+                                                <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="admin-input" autoFocus />
+                                                <button onClick={() => handleSaveName(player.id)} className="admin-btn btn-save">✓</button>
+                                                <button onClick={() => setEditingPlayer(null)} className="admin-btn btn-cancel">✕</button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <span style={{ fontWeight: '600', minWidth: '140px' }}>{player.name}</span>
+                                                <span style={{ color: '#718096', fontSize: '13px', flex: 1 }}>{player.claimed ? `✓ ${player.email}` : '○ Non reclamato'}</span>
+                                                <span style={{ color: '#667eea', fontSize: '13px' }}>OVR: {overall ? utils.toBase10(overall).toFixed(2) : '-'} ({voteCount} voti)</span>
+                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                    <button onClick={() => handleEditName(player)} className="admin-btn">✏️</button>
+                                                    <button onClick={() => handleEditVotes(player)} className="admin-btn btn-chart">📊</button>
+                                                    <button onClick={() => handleDeletePlayer(player.id)} className="admin-btn btn-delete">🗑️</button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {activeTab === 'system' && (
+                <>
+                    <div className="settings-group">
+                        <h3>💾 Backup Database</h3>
+                        <p>Esporta o importa tutti i dati (utenti e voti) per fare backup o ripristinare</p>
+                        <div style={{ display: 'flex', gap: '15px', marginTop: '15px' }}>
+                            <button className="btn btn-primary" onClick={() => {
+                                const data = { users, votes, timestamp: Date.now(), date: new Date().toISOString() };
+                                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `calcetto_backup_${new Date().toISOString().split('T')[0]}.json`;
+                                a.click();
+                                showSuccessMsg('Backup esportato!');
+                            }}>📥 Esporta Backup</button>
+                            <button className="btn btn-secondary" onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = '.json';
+                                input.onchange = async (e) => {
+                                    try {
+                                        const file = e.target.files[0];
+                                        const text = await file.text();
+                                        const data = JSON.parse(text);
+                                        if (!confirm('⚠️ ATTENZIONE: Questo sovrascriverà tutti i dati attuali. Continuare?')) return;
+                                        if (data.users) await storage.setUsers(data.users);
+                                        if (data.votes) await storage.setVotes(data.votes);
+                                        showSuccessMsg('Backup importato!');
+                                        setTimeout(() => window.location.reload(), 1000);
+                                    } catch (err) {
+                                        alert('Errore durante l\'importazione: ' + err.message);
+                                    }
+                                };
+                                input.click();
+                            }}>📤 Importa Backup</button>
+                        </div>
+                    </div>
+
+                    <div className="settings-group admin-danger-zone">
+                        <h3>⚠️ Zona Pericolosa</h3>
+                        <p>Azioni irreversibili!</p>
+                        <button className="btn btn-danger" onClick={handleFullReset}>🗑️ Reset Completo</button>
+                    </div>
+                </>
+            )}
+
+            {/* MODAL MODIFICA VOTI */}
             {editingVotes && (
                 <div className="modal-overlay">
                     <div className="modal-content modal-large">
