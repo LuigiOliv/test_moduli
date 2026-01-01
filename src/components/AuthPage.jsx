@@ -10,9 +10,13 @@ export function LoginPage({ onLogin }) {
         setError(null);
         try {
             const user = await storage.handleLogin();
-            onLogin(user.email);  // ← Passa solo l'email, non l'oggetto intero
+            // Se user è null (mobile redirect), non facciamo nulla. 
+            // Sarà onAuthStateChanged in App.jsx a gestire il login al ritorno.
+            if (user && user.email) {
+                onLogin(user.email);
+            }
         } catch (e) {
-            setError("Accesso fallito. Assicurati di usare un account autorizzato.");
+            setError("Accesso fallito.");
             console.error(e);
         } finally {
             setLoading(false);

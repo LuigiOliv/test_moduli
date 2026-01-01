@@ -62,7 +62,7 @@ function App() {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser && firebaseUser.email) {
+            if (firebaseUser) {
                 setLoading(true);
                 try {
                     // A. Leggi TUTTI gli utenti

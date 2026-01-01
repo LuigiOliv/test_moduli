@@ -67,23 +67,16 @@ const storage = {
     handleLogin: async () => {
         const { auth } = await import('./firebase.js');
         const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } = await import('firebase/auth');
-
         const provider = new GoogleAuthProvider();
-
         // Rileva se è mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         if (isMobile) {
-            // Mobile: usa redirect
             await signInWithRedirect(auth, provider);
+            return null; // Il codice si fermerà qui perché la pagina reindirizza
         } else {
-            // Desktop: usa popup (funziona con localhost)
             const result = await signInWithPopup(auth, provider);
-            return {
-                email: result.user.email,
-                displayName: result.user.displayName,
-                photoURL: result.user.photoURL
-            };
+            return result.user; // Restituisci l'oggetto user intero
         }
     },
 
