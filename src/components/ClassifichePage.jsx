@@ -1,7 +1,7 @@
 // src/components/ClassifichePage.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import utils from '../utils.js';
 import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER } from '../constants.js';
 
@@ -13,21 +13,55 @@ import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER } from '../constants.js';
  * @param {function} onViewProfile - Callback per aprire il profilo di un giocatore.
  */
 
+const RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+const getVoteTimestamp = (vote) => {
+    const rawDate = vote.createdAt ?? vote.updatedAt ?? vote.date ?? vote.timestamp;
+    if (rawDate === undefined || rawDate === null) return null;
+    if (typeof rawDate === 'number') return rawDate;
+    const parsed = Date.parse(rawDate);
+    return Number.isNaN(parsed) ? null : parsed;
+};
+
 function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile }) {
     const [view, setView] = useState('main'); // 'main' | 'macro-detail' | 'skill-detail'
     const [selectedMacro, setSelectedMacro] = useState(null);
     const [selectedSkill, setSelectedSkill] = useState(null);
-    const [showAllOverall, setShowAllOverall] = useState(false);
-    const [showAllMacro, setShowAllMacro] = useState({ tecniche: false, tattiche: false, fisiche: false });
+    const [showMoreOverall, setShowMoreOverall] = useState(false);
+    const [showMoreMacros, setShowMoreMacros] = useState({ tecniche: false, tattiche: false, fisiche: false });
+    const [activeTab, setActiveTab] = useState('overall');
+    const touchStartX = useRef(null);
+    const touchEndX = useRef(null);
+
+    const currentUserId = currentUser?.id;
+    const voteablePlayersCount = useMemo(() => {
+        return users.filter(u => !u.id.startsWith('seed') && (!currentUserId || u.id !== currentUserId)).length;
+    }, [users, currentUserId]);
+    const hasVoteTargets = voteablePlayersCount > 0;
 
     // Scroll to top quando cambia la vista
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [view, selectedMacro, selectedSkill]);
 
+    useEffect(() => {
+        setShowMoreOverall(false);
+        setShowMoreMacros({ tecniche: false, tattiche: false, fisiche: false });
+    }, [activeTab]);
+
     // Conta i voti fatti dall'utente corrente
-    const userVotesCount = votes.filter(v => v.voterId === currentUser.id).length;
-    const canViewLeaderboard = userVotesCount >= 5;
+    const userVotesCount = useMemo(() => {
+        if (!currentUserId) return 0;
+        const now = Date.now();
+        return votes.filter(v => {
+            if (v.voterId !== currentUserId) return false;
+            const ts = getVoteTimestamp(v);
+            if (ts == null) return false;
+            return now - ts <= RECENT_WINDOW_MS;
+        }).length;
+    }, [votes, currentUserId]);
+
+    const canViewLeaderboard = !hasVoteTargets || userVotesCount >= 5;
 
     // Calcola statistiche overall
     const playersWithOverall = users
@@ -38,7 +72,7 @@ function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile })
             const voteCount = utils.countVotes(player.id, votes);
             return { ...player, overall, voteCount, averages };
         })
-        .filter(p => p.overall !== null && p.voteCount >= 3)
+        .filter(p => p.overall !== null && p.voteCount >= 5)
         .sort((a, b) => b.overall - a.overall);
 
     // Funzione per calcolare classifica per macrocategoria
@@ -70,7 +104,7 @@ function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile })
 
                 return { ...player, score: categoryAvg, voteCount };
             })
-            .filter(p => p.score !== null && p.voteCount >= 3)
+            .filter(p => p.score !== null && p.voteCount >= 5)
             .sort((a, b) => b.score - a.score);
     };
 
@@ -85,7 +119,7 @@ function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile })
 
                 return { ...player, score, voteCount };
             })
-            .filter(p => p.score !== undefined && p.voteCount >= 3)
+            .filter(p => p.score !== undefined && p.voteCount >= 5)
             .sort((a, b) => b.score - a.score);
     };
 
@@ -108,6 +142,42 @@ function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile })
         setSelectedSkill(null);
     };
 
+    const tabs = [
+        { id: 'overall', label: 'Generale', emoji: '🏆' },
+        { id: 'macro', label: 'Macrocategorie', emoji: '📈' },
+        { id: 'skill', label: 'Skill', emoji: '⚡' }
+    ];
+    const tabOrder = tabs.map(tab => tab.id);
+    const swipeThreshold = 60;
+    const goToTabIndex = (index) => {
+        if (index >= 0 && index < tabOrder.length) {
+            setActiveTab(tabOrder[index]);
+        }
+    };
+    const handleSwipeDelta = (deltaX) => {
+        if (deltaX > swipeThreshold) {
+            goToTabIndex(tabOrder.indexOf(activeTab) - 1);
+        } else if (deltaX < -swipeThreshold) {
+            goToTabIndex(tabOrder.indexOf(activeTab) + 1);
+        }
+    };
+    const handleTouchStart = (event) => {
+        touchStartX.current = event.touches[0].clientX;
+        touchEndX.current = null;
+    };
+    const handleTouchMove = (event) => {
+        if (touchStartX.current !== null) {
+            touchEndX.current = event.touches[0].clientX;
+        }
+    };
+    const handleTouchEnd = () => {
+        if (touchStartX.current !== null && touchEndX.current !== null) {
+            handleSwipeDelta(touchEndX.current - touchStartX.current);
+        }
+        touchStartX.current = null;
+        touchEndX.current = null;
+    };
+
     // Se non ha votato abbastanza
     if (!canViewLeaderboard) {
         return (
@@ -118,9 +188,9 @@ function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile })
 
                 <div className="no-votes">
                     <h3>🔒 Classifica Bloccata</h3>
-                    <p>Per visualizzare le classifiche devi completare almeno 5 valutazioni</p>
+                    <p>Per visualizzare le classifiche devi completare almeno 5 valutazioni negli ultimi 7 giorni</p>
                     <p style={{ marginTop: '15px', fontSize: '1.2rem', color: 'var(--volt)' }}>
-                        Hai completato: <strong>{userVotesCount}/5</strong> valutazioni
+                        Hai completato: <strong>{userVotesCount}/5</strong> valutazioni negli ultimi 7 giorni
                     </p>
                     <p style={{ marginTop: '10px', opacity: '0.8' }}>
                         Vai alla sezione "Valuta" per votare altri giocatori!
@@ -236,187 +306,207 @@ function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile })
             <div className="section-header">
                 <h2>📊 Classifiche Complete</h2>
             </div>
-
-            {/* 1️⃣ CLASSIFICA OVERALL */}
-            <div className="rankings-overall-section">
-                <h3 className="rankings-section-title">🏆 Classifica Generale</h3>
-
-                <div className="leaderboard-container">
-                    {playersWithOverall.slice(0, showAllOverall ? undefined : 5).map((player, index) => (
-                        <div
-                            key={player.id}
-                            className={`leaderboard-item ${index < 3 ? `rank-${index + 1}` : ''}`}
-                            onClick={() => onViewProfile(player.id)}
-                        >
-                            <div className="rank-number">
-                                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
-                            </div>
-                            <div className="avatar">
-                                {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: '600', fontSize: '18px' }}>{player.name} {player.isGoalkeeper && '🧤'}</div>
-                                <div style={{ fontSize: '13px', opacity: 0.8 }}>{player.voteCount} valutazioni</div>
-                            </div>
-                            <div style={{ fontWeight: '800', fontSize: '28px' }}>{utils.toBase10(player.overall).toFixed(2)}</div>
-                        </div>
-                    ))}
-                </div>
-
-                {playersWithOverall.length > 5 && (
+            <div className="leaderboard-tabs">
+                {tabs.map(tab => (
                     <button
-                        className="btn-expand"
-                        onClick={() => setShowAllOverall(!showAllOverall)}
+                        key={tab.id}
+                        className={`leaderboard-tab ${activeTab === tab.id ? 'leaderboard-tab--active' : ''}`}
+                        onClick={() => setActiveTab(tab.id)}
                     >
-                        {showAllOverall ? '⬆️ Mostra meno' : `⬇️ Mostra altri ${playersWithOverall.length - 5}`}
+                        <span>{tab.emoji}</span>
+                        <span>{tab.label}</span>
                     </button>
-                )}
+                ))}
             </div>
-
-            {/* 2️⃣ MACROCATEGORIE */}
-            <h3 className="rankings-section-title" style={{ marginTop: '40px' }}>📈 Classifiche per Macrocategoria</h3>
-
-            <div className="rankings-macro-grid">
-                {/* TECNICA */}
-                <div className="rankings-macro-card rankings-macro-tecnica" onClick={() => openMacroDetail('tecniche')}>
-                    <div className="rankings-macro-header">
-                        <span className="rankings-macro-emoji">🎯</span>
-                        <span className="rankings-macro-title">Tecnica</span>
-                    </div>
-
-                    <div className="rankings-compact-list">
-                        {getPlayersForMacro('tecniche').slice(0, showAllMacro.tecniche ? undefined : 3).map((player, index) => (
-                            <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
-                                <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
-                                <div className="avatar-small">
-                                    {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: '600', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {player.name} {player.isGoalkeeper && '🧤'}
+            <p className="leaderboard-swipe-hint">↔️ Swipe per cambiare tab</p>
+            <div
+                className="leaderboard-tabpanels"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
+                <section className={`leaderboard-tabpanel ${activeTab === 'overall' ? '' : 'leaderboard-tabpanel--hidden'}`}>
+                    <div className="rankings-overall-section">
+                        <h3 className="rankings-section-title">🏆 Classifica Generale</h3>
+                        <div className="leaderboard-container">
+                            {playersWithOverall.slice(0, showMoreOverall ? undefined : 20).map((player, index) => (
+                                <div
+                                    key={player.id}
+                                    className={`leaderboard-item ${index < 3 ? `rank-${index + 1}` : ''}`}
+                                    onClick={() => onViewProfile(player.id)}
+                                >
+                                    <div className="rank-number">
+                                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
                                     </div>
-                                </div>
-                                <div style={{ fontWeight: '800', fontSize: '20px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {getPlayersForMacro('tecniche').length > 3 && (
-                        <button
-                            className="btn-expand-small"
-                            onClick={(e) => { e.stopPropagation(); setShowAllMacro({ ...showAllMacro, tecniche: !showAllMacro.tecniche }); }}
-                        >
-                            {showAllMacro.tecniche ? '⬆️ Mostra meno' : `⬇️ Mostra tutti (${getPlayersForMacro('tecniche').length})`}
-                        </button>
-                    )}
-                </div>
-
-                {/* TATTICA */}
-                <div className="rankings-macro-card rankings-macro-tattica" onClick={() => openMacroDetail('tattiche')}>
-                    <div className="rankings-macro-header">
-                        <span className="rankings-macro-emoji">🧠</span>
-                        <span className="rankings-macro-title">Tattica</span>
-                    </div>
-
-                    <div className="rankings-compact-list">
-                        {getPlayersForMacro('tattiche').slice(0, showAllMacro.tattiche ? undefined : 3).map((player, index) => (
-                            <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
-                                <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
-                                <div className="avatar-small">
-                                    {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: '600', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {player.name} {player.isGoalkeeper && '🧤'}
+                                    <div className="avatar">
+                                        {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
                                     </div>
-                                </div>
-                                <div style={{ fontWeight: '800', fontSize: '20px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {getPlayersForMacro('tattiche').length > 3 && (
-                        <button
-                            className="btn-expand-small"
-                            onClick={(e) => { e.stopPropagation(); setShowAllMacro({ ...showAllMacro, tattiche: !showAllMacro.tattiche }); }}
-                        >
-                            {showAllMacro.tattiche ? '⬆️ Mostra meno' : `⬇️ Mostra tutti (${getPlayersForMacro('tattiche').length})`}
-                        </button>
-                    )}
-                </div>
-
-                {/* FISICA */}
-                <div className="rankings-macro-card rankings-macro-fisica" onClick={() => openMacroDetail('fisiche')}>
-                    <div className="rankings-macro-header">
-                        <span className="rankings-macro-emoji">💪</span>
-                        <span className="rankings-macro-title">Fisica</span>
-                    </div>
-
-                    <div className="rankings-compact-list">
-                        {getPlayersForMacro('fisiche').slice(0, showAllMacro.fisiche ? undefined : 3).map((player, index) => (
-                            <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
-                                <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
-                                <div className="avatar-small">
-                                    {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: '600', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {player.name} {player.isGoalkeeper && '🧤'}
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: '600', fontSize: '18px' }}>{player.name} {player.isGoalkeeper && '🧤'}</div>
+                                        <div style={{ fontSize: '13px', opacity: 0.8 }}>{player.voteCount} valutazioni</div>
                                     </div>
+                                    <div style={{ fontWeight: '800', fontSize: '28px' }}>{utils.toBase10(player.overall).toFixed(2)}</div>
                                 </div>
-                                <div style={{ fontWeight: '800', fontSize: '20px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+
+                        {playersWithOverall.length > 20 && (
+                            <button className="btn-expand" onClick={() => setShowMoreOverall(!showMoreOverall)}>
+                                {showMoreOverall ? '⬆️ Mostra meno' : `⬇️ Mostra altri ${playersWithOverall.length - 20}`}
+                            </button>
+                        )}
                     </div>
+                </section>
 
-                    {getPlayersForMacro('fisiche').length > 3 && (
-                        <button
-                            className="btn-expand-small"
-                            onClick={(e) => { e.stopPropagation(); setShowAllMacro({ ...showAllMacro, fisiche: !showAllMacro.fisiche }); }}
-                        >
-                            {showAllMacro.fisiche ? '⬆️ Mostra meno' : `⬇️ Mostra tutti (${getPlayersForMacro('fisiche').length})`}
-                        </button>
-                    )}
-                </div>
-            </div>
+                <section className={`leaderboard-tabpanel ${activeTab === 'macro' ? '' : 'leaderboard-tabpanel--hidden'}`}>
+                    <h3 className="rankings-section-title" style={{ marginTop: 0 }}>📈 Classifiche per Macrocategoria</h3>
+                    <div className="rankings-macro-grid">
+                        <div className="rankings-macro-card rankings-macro-tecnica" onClick={() => openMacroDetail('tecniche')}>
+                            <div className="rankings-macro-header">
+                                <span className="rankings-macro-emoji">🎯</span>
+                                <span className="rankings-macro-title">Tecnica</span>
+                            </div>
 
-            {/* 3️⃣ SKILL INDIVIDUALI */}
-            <h3 className="rankings-section-title" style={{ marginTop: '40px' }}>⚡ Top 3 per ogni Skill</h3>
-
-            <div className="rankings-skills-grid">
-                {Object.keys(SKILLS).flatMap(category =>
-                    SKILLS[category].map((skill, idx) => {
-                        const playersForSkill = getPlayersForSkill(skill);
-                        const skillEmojis = {
-                            'Tiro': '⚡', 'Passaggio corto': '📨', 'Passaggio lungo': '📡', 'Contrasto': '🛡️', 'Controllo': '⚽',
-                            'Visione di gioco': '👁️', 'Senso della posizione': '📍', 'Spirito di sacrificio': '💪',
-                            'Letture difensive': '🛡️', 'Costruzione': '🗝️',
-                            'Resistenza': '🏃', 'Scatto': '⚡', 'Progressione': '🚀', 'Presenza fisica': '🦁', 'Cazzimma': '🔥'
-                        };
-                        const emoji = skillEmojis[skill] || '⭐';
-
-                        return (
-                            <div key={skill} className="rankings-skill-card" onClick={() => openSkillDetail(skill, category)}>
-                                <div className="rankings-skill-title">{emoji} {skill}</div>
-
-                                <div className="rankings-mini-list">
-                                    {playersForSkill.slice(0, 3).map((player, index) => (
-                                        <div key={player.id} className="rankings-mini-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
-                                            <div className="rank-mini">{index + 1}</div>
-                                            <div className="avatar-mini">
-                                                {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0, fontSize: '14px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {player.name}
-                                            </div>
-                                            <div style={{ fontWeight: '800', fontSize: '16px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                            <div className="rankings-compact-list">
+                                {getPlayersForMacro('tecniche').slice(0, showMoreMacros.tecniche ? undefined : 10).map((player, index) => (
+                                    <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
+                                        <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
+                                        <div className="avatar-small">
+                                            {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
                                         </div>
-                                    ))}
-                                </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontWeight: '600', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {player.name} {player.isGoalkeeper && '🧤'}
+                                            </div>
+                                        </div>
+                                        <div style={{ fontWeight: '800', fontSize: '20px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                                    </div>
+                                ))}
                             </div>
-                        );
-                    })
-                )}
+
+                            {getPlayersForMacro('tecniche').length > 10 && (
+                                <button
+                                    className="btn-expand-small"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMoreMacros(prev => ({ ...prev, tecniche: !prev.tecniche }));
+                                    }}
+                                >
+                                    {showMoreMacros.tecniche ? '⬆️ Mostra meno' : `⬇️ Mostra tutti (${getPlayersForMacro('tecniche').length})`}
+                                </button>
+                            )}
+                        </div>
+                        <div className="rankings-macro-card rankings-macro-tattica" onClick={() => openMacroDetail('tattiche')}>
+                            <div className="rankings-macro-header">
+                                <span className="rankings-macro-emoji">🧠</span>
+                                <span className="rankings-macro-title">Tattica</span>
+                            </div>
+
+                            <div className="rankings-compact-list">
+                                {getPlayersForMacro('tattiche').slice(0, showMoreMacros.tattiche ? undefined : 10).map((player, index) => (
+                                    <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
+                                        <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
+                                        <div className="avatar-small">
+                                            {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontWeight: '600', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {player.name} {player.isGoalkeeper && '🧤'}
+                                            </div>
+                                        </div>
+                                        <div style={{ fontWeight: '800', fontSize: '20px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {getPlayersForMacro('tattiche').length > 10 && (
+                                <button
+                                    className="btn-expand-small"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMoreMacros(prev => ({ ...prev, tattiche: !prev.tattiche }));
+                                    }}
+                                >
+                                    {showMoreMacros.tattiche ? '⬆️ Mostra meno' : `⬇️ Mostra tutti (${getPlayersForMacro('tattiche').length})`}
+                                </button>
+                            )}
+                        </div>
+                        <div className="rankings-macro-card rankings-macro-fisica" onClick={() => openMacroDetail('fisiche')}>
+                            <div className="rankings-macro-header">
+                                <span className="rankings-macro-emoji">💪</span>
+                                <span className="rankings-macro-title">Fisica</span>
+                            </div>
+
+                            <div className="rankings-compact-list">
+                                {getPlayersForMacro('fisiche').slice(0, showMoreMacros.fisiche ? undefined : 10).map((player, index) => (
+                                    <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
+                                        <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
+                                        <div className="avatar-small">
+                                            {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontWeight: '600', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {player.name} {player.isGoalkeeper && '🧤'}
+                                            </div>
+                                        </div>
+                                        <div style={{ fontWeight: '800', fontSize: '20px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {getPlayersForMacro('fisiche').length > 10 && (
+                                <button
+                                    className="btn-expand-small"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMoreMacros(prev => ({ ...prev, fisiche: !prev.fisiche }));
+                                    }}
+                                >
+                                    {showMoreMacros.fisiche ? '⬆️ Mostra meno' : `⬇️ Mostra tutti (${getPlayersForMacro('fisiche').length})`}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </section>
+
+                <section className={`leaderboard-tabpanel ${activeTab === 'skill' ? '' : 'leaderboard-tabpanel--hidden'}`}>
+                    <h3 className="rankings-section-title" style={{ marginTop: 0 }}>⚡ Top 5 per ogni Skill</h3>
+                    <div className="rankings-skills-grid">
+                        {Object.keys(SKILLS).flatMap(category =>
+                            SKILLS[category].map(skill => {
+                                const playersForSkill = getPlayersForSkill(skill);
+                                const skillEmojis = {
+                                    'Tiro': '⚡', 'Passaggio corto': '📨', 'Passaggio lungo': '📡', 'Contrasto': '🛡️', 'Controllo': '⚽',
+                                    'Visione di gioco': '👁️', 'Senso della posizione': '📍', 'Spirito di sacrificio': '💪',
+                                    'Letture difensive': '🛡️', 'Costruzione': '🗝️',
+                                    'Resistenza': '🏃', 'Scatto': '⚡', 'Progressione': '🚀', 'Presenza fisica': '🦁', 'Cazzimma': '🔥'
+                                };
+                                const emoji = skillEmojis[skill] || '⭐';
+
+                                return (
+                                    <div key={skill} className="rankings-skill-card" onClick={() => openSkillDetail(skill, category)}>
+                                        <div className="rankings-skill-title">{emoji} {skill}</div>
+
+                                        <div className="rankings-mini-list">
+                                            {playersForSkill.slice(0, 5).map((player, index) => (
+                                                <div key={player.id} className="rankings-mini-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
+                                                    <div className="rank-mini">{index + 1}</div>
+                                                    <div className="avatar-mini">
+                                                        {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: 0, fontSize: '14px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {player.name}
+                                                    </div>
+                                                    <div style={{ fontWeight: '800', fontSize: '16px' }}>{utils.toBase10(player.score).toFixed(2)}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </section>
             </div>
         </div>
     );

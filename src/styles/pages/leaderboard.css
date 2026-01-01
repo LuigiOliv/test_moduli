@@ -125,6 +125,7 @@
         gap: 25px;
     }
 }
+
 /* Queste sono le card per macrocategoria */
 .rankings-macro-card {
     background: var(--bg-card);
@@ -221,13 +222,16 @@
 
 /* Grid Skill */
 .rankings-skills-section {
-    max-width: 100%; /* ✅ NUOVO: Limita larghezza */
+    max-width: 100%;
+    /* ✅ NUOVO: Limita larghezza */
     margin: 0 auto;
 }
+
 .rankings-skills-grid {
     display: grid;
     gap: 12px;
-    grid-template-columns: 1fr; /* Mobile: 1 colonna */
+    grid-template-columns: 1fr;
+    /* Mobile: 1 colonna */
 }
 
 /* Tablet */
@@ -254,7 +258,7 @@
     transition: all 0.3s;
     cursor: pointer;
     position: relative;
-        overflow: hidden;
+    overflow: hidden;
 }
 
 .rankings-skill-card:hover,
@@ -326,4 +330,63 @@
     border-color: rgba(210, 248, 0, 0.3);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================================
+   STILI AGGIUNTIVI PER LEADERBOARD TABS
+   ============================================================================ */
+
+.leaderboard-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.leaderboard-tab {
+    flex: 1 1 30%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    font-weight: 600;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.leaderboard-tab--active {
+    background: var(--volt, #D2F800);
+    border-color: transparent;
+    color: #0d0d0d;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+.leaderboard-tabpanels {
+    width: 100%;
+    touch-action: pan-y;
+}
+
+.leaderboard-tabpanel {
+    width: 100%;
+}
+
+.leaderboard-tabpanel--hidden {
+    display: none;
+}
+
+.leaderboard-swipe-hint {
+    text-align: center;
+    font-size: 0.85rem;
+    opacity: 0.65;
+    margin-bottom: 16px;
+}
+
+@media (min-width: 768px) {
+    .leaderboard-swipe-hint {
+        display: none;
+    }
 }
