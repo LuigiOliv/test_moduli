@@ -72,16 +72,16 @@ const storage = {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         if (isMobile) {
+            // Forza la persistenza locale prima del redirect
+            const { setPersistence, browserLocalPersistence } = await import('firebase/auth');
+            await setPersistence(auth, browserLocalPersistence);
             await signInWithRedirect(auth, provider);
-            return null; // Il codice si fermerà qui perché la pagina reindirizza
+            return null; // La pagina ricaricherà, non serve restituire nulla
         } else {
             const result = await signInWithPopup(auth, provider);
             return result.user; // Restituisci l'oggetto user intero
         }
     },
-
-
-
 
     getMatches: async () => {
         const q = query(

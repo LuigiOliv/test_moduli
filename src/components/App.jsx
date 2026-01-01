@@ -62,12 +62,12 @@ function App() {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                setLoading(true);
+            setLoading(true);
+            if (firebaseUser && firebaseUser.email) {
                 try {
                     // A. Leggi TUTTI gli utenti
                     let loadedUsers = await storage.getUsers();
-
+                    // Carichiamo i dati solo se abbiamo l'utente
                     // 🛡️ SAFETY CHECK
                     if (!loadedUsers || !Array.isArray(loadedUsers)) {
                         console.error('❌ storage.getUsers() returned:', loadedUsers);
@@ -133,12 +133,16 @@ function App() {
                 } finally {
                     setLoading(false);
                 }
-
             } else {
-                // L'utente NON è loggato
-                setCurrentUser(null);
-                storage.setCurrentUser(null);
-                setLoading(false);
+                // Qui è dove spesso avviene il loop: onAuthStateChanged dice "no user" 
+                // proprio mentre Google sta cercando di loggarti.
+                // Aspettiamo un attimo prima di mostrare il login
+                const result = await getRedirectResult(auth);
+                if (!result) {
+                    setCurrentUser(null);
+                    storage.setCurrentUser(null);
+                    setLoading(false);
+                }
             }
         });
 
