@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/rugby/',  // ⚠️ Specifica per rugby-app
+  base: '/calcetto/',  // ⚠️ Specifica per calcetto-app
   esbuild: {
     loader: 'jsx',
     include: /src\/.*\.jsx?$/,

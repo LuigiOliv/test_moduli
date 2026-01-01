@@ -13,7 +13,11 @@ import App from './components/App.jsx';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
+  import.meta.env.DEV ? (
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  ) : (
     <App />
-  </React.StrictMode>
+  )
 );

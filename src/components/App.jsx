@@ -1,7 +1,7 @@
 // src/components/App.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { auth } from '../firebase.js';
 import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import storage from '../storage.js';
@@ -27,6 +27,8 @@ function App() {
             sessionStorage.removeItem('pendingEmail');
         }
     };
+    const hasCheckedRedirect = useRef(false);
+
 
     // ✅ NUOVO: Gestisci il ritorno dal redirect di Google
     useEffect(() => {
@@ -134,15 +136,18 @@ function App() {
                     setLoading(false);
                 }
             } else {
-                // Qui è dove spesso avviene il loop: onAuthStateChanged dice "no user" 
-                // proprio mentre Google sta cercando di loggarti.
-                // Aspettiamo un attimo prima di mostrare il login
-                const result = await getRedirectResult(auth);
-                if (!result) {
-                    setCurrentUser(null);
-                    storage.setCurrentUser(null);
-                    setLoading(false);
+                // 🔧 FIX: Check redirect result solo UNA volta
+                if (!hasCheckedRedirect.current) {
+                    hasCheckedRedirect.current = true;
+                    const result = await getRedirectResult(auth);
+                    if (result?.user) {
+                        console.log('✅ Login completato dopo redirect mobile');
+                        // Il prossimo onAuthStateChanged avrà firebaseUser
+                        return;
+                    }
                 }
+                setCurrentUser(null);
+                setLoading(false);
             }
         });
 
