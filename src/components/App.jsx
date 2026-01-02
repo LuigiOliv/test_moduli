@@ -62,6 +62,27 @@ function App() {
     const [showAntonioSelector, setShowAntonioSelector] = useState(false);
     const [antonioProfiles, setAntonioProfiles] = useState([]);
 
+    // 🔧 DEBUG: Verifica storage mobile
+    useEffect(() => {
+        console.log('📦 Test localStorage:');
+        try {
+            localStorage.setItem('test_calcetto', 'works');
+            console.log('📦 localStorage.test_calcetto:', localStorage.getItem('test_calcetto'));
+            console.log('📦 Tutte le chiavi localStorage:', Object.keys(localStorage));
+
+            // Controlla se ci sono chiavi Firebase
+            const firebaseKeys = Object.keys(localStorage).filter(k =>
+                k.includes('firebase') || k.includes('calcetto-af1e0')
+            );
+            console.log('📦 Chiavi Firebase trovate:', firebaseKeys);
+            firebaseKeys.forEach(key => {
+                console.log(`📦 ${key}:`, localStorage.getItem(key)?.substring(0, 100));
+            });
+        } catch (e) {
+            console.error('❌ localStorage BLOCCATO:', e);
+        }
+    }, []);
+
     // 🔧 FIX: Aspetta init completo, poi controlla redirect
     useEffect(() => {
         console.log('🔵 Inizio gestione auth');
