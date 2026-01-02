@@ -34,17 +34,17 @@ function App() {
     useEffect(() => {
         const checkRedirectResult = async () => {
             try {
+                hasCheckedRedirect.current = true; // 🔧 AGGIUNGI QUESTA RIGA
                 const result = await getRedirectResult(auth);
                 if (result?.user) {
-                    console.log('✅ Login completato dopo redirect');
+                    console.log('✅ Login completato dopo redirect, user:', result.user.email);
                     // Il resto viene gestito da onAuthStateChanged
                 }
             } catch (error) {
                 console.error('❌ Errore redirect login:', error);
-                alert('Errore durante il login: ' + error.message);
+                alert('Errore durante il login. Riprova.');
             }
         };
-
         checkRedirectResult();
     }, []);
 
