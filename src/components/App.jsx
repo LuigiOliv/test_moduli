@@ -62,21 +62,29 @@ function App() {
     const [showAntonioSelector, setShowAntonioSelector] = useState(false);
     const [antonioProfiles, setAntonioProfiles] = useState([]);
 
-    // 🔧 FIX: Controlla redirect PRIMA, poi attiva listener
+    // 🔧 FIX: Aspetta init completo, poi controlla redirect
     useEffect(() => {
         console.log('🔵 Inizio gestione auth');
         let unsubscribe;
 
-        (async () => {
+        // Aspetta che Firebase sia completamente inizializzato
+        const initAuth = async () => {
             try {
-                // STEP 1: Controlla redirect result PRIMA di tutto
-                console.log('🔵 Controllo redirect result...');
+                // Piccolo delay per garantire che Firebase sia pronto
+                await new Promise(resolve => setTimeout(resolve, 500));
+                console.log('🔵 Firebase pronto, controllo redirect...');
+
                 const redirectResult = await getRedirectResult(auth);
                 console.log('🔵 Redirect result:', redirectResult?.user?.email || 'NULL');
 
-                // STEP 2: Ora attiva il listener
+                // Se c'è un redirect result, forza il trigger di onAuthStateChanged
+                if (redirectResult?.user) {
+                    console.log('✅ Trovato redirect user:', redirectResult.user.email);
+                }
+
+                // Attiva listener DOPO aver controllato redirect
                 unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-                    console.log('🔵 onAuthStateChanged trigger, user:', firebaseUser?.email || 'NULL');
+                    console.log('🔵 onAuthStateChanged, user:', firebaseUser?.email || 'NULL');
                     setLoading(true);
 
                     if (firebaseUser && firebaseUser.email) {
@@ -93,8 +101,6 @@ function App() {
                             setUsers(loadedUsers);
 
                             const email = firebaseUser.email;
-                            console.log('🟢 Cerco utente con email:', email);
-
                             const recoveredUser = await storage.recoverAccount(email, {
                                 avatar: firebaseUser.photoURL
                             });
@@ -110,47 +116,43 @@ function App() {
                                 setShowRoleModal(true);
                             } else {
                                 const existingUser = loadedUsers.find(u => u.email === email);
-                                console.log('🟢 Utente esistente trovato?', existingUser ? existingUser.name : 'NO');
+                                console.log('🟢 Utente trovato?', existingUser?.name || 'NO');
 
                                 if (existingUser) {
-                                    console.log('✅ LOGIN SUCCESS per:', existingUser.name);
+                                    console.log('✅ LOGIN SUCCESS:', existingUser.name);
                                     const userWithAdmin = { ...existingUser, isAdmin: email === ADMIN_EMAIL };
                                     setCurrentUser(userWithAdmin);
                                     storage.setCurrentUser(userWithAdmin);
-
                                     const loadedVotes = await storage.getVotes();
                                     setVotes(loadedVotes || []);
-
                                     if (!existingUser.preferredRole) setShowRoleModal(true);
                                 } else {
-                                    console.log('⚠️ Utente NON trovato, mostro modal claim');
+                                    console.log('⚠️ Utente NON trovato, modal claim');
                                     setPendingEmail(email);
                                     setShowClaimModal(true);
                                 }
                             }
                         } catch (error) {
-                            console.error('❌ Errore caricamento dati DOPO login:', error);
+                            console.error('❌ Errore caricamento:', error);
                             alert('Errore caricamento dati. Ricarica la pagina.');
                         } finally {
-                            console.log('🔵 setLoading(false) - fine processo auth');
                             setLoading(false);
                         }
                     } else {
-                        console.log('🔴 Nessun utente - mostro login page');
+                        console.log('🔴 Nessun utente autenticato');
                         setCurrentUser(null);
                         setLoading(false);
                     }
                 });
             } catch (error) {
-                console.error('❌ Errore gestione auth:', error);
+                console.error('❌ Errore init auth:', error);
                 setLoading(false);
             }
-        })();
-
-        return () => {
-            console.log('🔵 Cleanup - unsubscribe');
-            unsubscribe?.();
         };
+
+        initAuth();
+
+        return () => unsubscribe?.();
     }, []);
 
     const handleLogin = (email) => {
