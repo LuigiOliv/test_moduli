@@ -65,21 +65,34 @@ const storage = {
 
     // ✅ Login intelligente: popup desktop, redirect mobile
     handleLogin: async () => {
+        console.log('🔵 handleLogin chiamato');
         const { auth } = await import('./firebase.js');
-        const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } = await import('firebase/auth');
+        const { GoogleAuthProvider, signInWithPopup, signInWithRedirect, setPersistence, browserLocalPersistence } = await import('firebase/auth');
         const provider = new GoogleAuthProvider();
+
         // Rileva se è mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log('🔵 isMobile:', isMobile, '- userAgent:', navigator.userAgent);
 
         if (isMobile) {
-            // Forza la persistenza locale prima del redirect
-            const { setPersistence, browserLocalPersistence } = await import('firebase/auth');
-            await setPersistence(auth, browserLocalPersistence);
-            await signInWithRedirect(auth, provider);
-            return null; // La pagina ricaricherà, non serve restituire nulla
+            try {
+                console.log('🔵 Setto persistenza LOCAL...');
+                await setPersistence(auth, browserLocalPersistence);
+                console.log('✅ Persistenza settata');
+
+                console.log('🔵 Chiamo signInWithRedirect...');
+                await signInWithRedirect(auth, provider);
+                console.log('✅ signInWithRedirect completato (pagina dovrebbe ricaricare)');
+                return null;
+            } catch (error) {
+                console.error('❌ Errore in handleLogin mobile:', error);
+                throw error;
+            }
         } else {
+            console.log('🔵 Desktop: uso signInWithPopup');
             const result = await signInWithPopup(auth, provider);
-            return result.user; // Restituisci l'oggetto user intero
+            console.log('✅ Popup login completato:', result.user.email);
+            return result.user;
         }
     },
 
