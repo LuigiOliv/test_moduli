@@ -63,95 +63,89 @@ function App() {
     const [antonioProfiles, setAntonioProfiles] = useState([]);
 
     useEffect(() => {
+        console.log('🔵 useEffect onAuthStateChanged montato');
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            console.log('🔵 onAuthStateChanged trigger, firebaseUser:', firebaseUser?.email || 'NULL');
             setLoading(true);
+
             if (firebaseUser && firebaseUser.email) {
                 try {
-                    // A. Leggi TUTTI gli utenti
+                    console.log('🟢 Firebase user valido:', firebaseUser.email);
+
                     let loadedUsers = await storage.getUsers();
-                    // Carichiamo i dati solo se abbiamo l'utente
-                    // 🛡️ SAFETY CHECK
+                    console.log('🟢 Users caricati:', loadedUsers?.length || 0);
+
                     if (!loadedUsers || !Array.isArray(loadedUsers)) {
                         console.error('❌ storage.getUsers() returned:', loadedUsers);
                         loadedUsers = [];
                     }
-
-                    // ✅ IMPORTANTE: Salva users SUBITO (serve per ClaimProfileModal)
                     setUsers(loadedUsers);
 
-                    // B. Trova l'utente loggato
                     const email = firebaseUser.email;
+                    console.log('🟢 Cerco utente con email:', email);
 
-                    // ✅ PRIMA: Controlla se esiste un profilo eliminato da recuperare
                     const recoveredUser = await storage.recoverAccount(email, {
                         avatar: firebaseUser.photoURL
                     });
 
                     if (recoveredUser) {
-                        // ✅ Profilo recuperato! Riconnetti automaticamente
-                        console.log('✅ Profilo recuperato:', recoveredUser);
+                        console.log('🟢 Account recuperato:', recoveredUser.name);
                         const userWithAdmin = { ...recoveredUser, isAdmin: email === ADMIN_EMAIL };
                         setCurrentUser(userWithAdmin);
                         storage.setCurrentUser(userWithAdmin);
-
                         const loadedVotes = await storage.getVotes();
                         setVotes(loadedVotes || []);
-
-                        // Ricarica users aggiornati
-                        const updatedUsers = await storage.getUsers();
-                        setUsers(updatedUsers);
-
-                        // Chiedi di reimpostare i ruoli
+                        setUsers(await storage.getUsers());
                         setShowRoleModal(true);
-
                     } else {
-                        // ✅ Nessun profilo da recuperare, logica normale
                         const existingUser = loadedUsers.find(u => u.email === email);
+                        console.log('🟢 Utente esistente trovato?', existingUser ? existingUser.name : 'NO');
 
-                        // C. Logica di login/profilo
                         if (existingUser) {
-                            // Utente Trovato: Completa il Login
+                            console.log('✅ LOGIN SUCCESS per:', existingUser.name);
                             const userWithAdmin = { ...existingUser, isAdmin: email === ADMIN_EMAIL };
                             setCurrentUser(userWithAdmin);
                             storage.setCurrentUser(userWithAdmin);
 
-                            // D. Carica voti
                             const loadedVotes = await storage.getVotes();
                             setVotes(loadedVotes || []);
 
-                            // Gestione modali
                             if (!existingUser.preferredRole) setShowRoleModal(true);
-
                         } else {
-                            // Utente NON Trovato: Richiedi registrazione/claim
+                            console.log('⚠️ Utente NON trovato, mostro modal claim');
                             setPendingEmail(email);
                             setShowClaimModal(true);
                         }
-                    }  // ← Questa chiusura è per l'else del recoveredUser!
-
-                } catch (error) {  // ← Questa chiusura è per il try!
+                    }
+                } catch (error) {
                     console.error('❌ Errore caricamento dati DOPO login:', error);
                     alert('Errore caricamento dati. Ricarica la pagina.');
                 } finally {
+                    console.log('🔵 setLoading(false) - fine processo auth');
                     setLoading(false);
                 }
             } else {
-                // 🔧 FIX: Check redirect result solo UNA volta
+                console.log('🔴 firebaseUser è NULL o senza email');
                 if (!hasCheckedRedirect.current) {
+                    console.log('🔴 Controllo redirect result...');
                     hasCheckedRedirect.current = true;
                     const result = await getRedirectResult(auth);
+                    console.log('🔴 getRedirectResult():', result?.user?.email || 'NULL');
                     if (result?.user) {
                         console.log('✅ Login completato dopo redirect mobile');
-                        // Il prossimo onAuthStateChanged avrà firebaseUser
                         return;
                     }
                 }
+                console.log('🔴 Nessun utente - mostro login page');
                 setCurrentUser(null);
                 setLoading(false);
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            console.log('🔵 useEffect cleanup - onAuthStateChanged unsubscribe');
+            unsubscribe();
+        };
     }, []);
 
     const handleLogin = (email) => {
