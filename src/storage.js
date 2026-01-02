@@ -70,28 +70,24 @@ const storage = {
         const { GoogleAuthProvider, signInWithPopup, signInWithRedirect, setPersistence, browserLocalPersistence } = await import('firebase/auth');
         const provider = new GoogleAuthProvider();
 
-        // Rileva se è mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        console.log('🔵 isMobile:', isMobile, '- userAgent:', navigator.userAgent);
+        console.log('🔵 isMobile:', isMobile);
 
         if (isMobile) {
             try {
-                console.log('🔵 Setto persistenza LOCAL...');
+                alert('Mobile: sto per settare persistenza'); // AGGIUNGI QUESTO
                 await setPersistence(auth, browserLocalPersistence);
-                console.log('✅ Persistenza settata');
-
-                console.log('🔵 Chiamo signInWithRedirect...');
+                alert('Persistenza OK, faccio redirect'); // AGGIUNGI QUESTO
                 await signInWithRedirect(auth, provider);
-                console.log('✅ signInWithRedirect completato (pagina dovrebbe ricaricare)');
                 return null;
             } catch (error) {
+                alert('ERRORE: ' + error.message); // AGGIUNGI QUESTO
                 console.error('❌ Errore in handleLogin mobile:', error);
                 throw error;
             }
         } else {
             console.log('🔵 Desktop: uso signInWithPopup');
             const result = await signInWithPopup(auth, provider);
-            console.log('✅ Popup login completato:', result.user.email);
             return result.user;
         }
     },
