@@ -75,13 +75,10 @@ const storage = {
 
         if (isMobile) {
             try {
-                alert('Mobile: sto per settare persistenza'); // AGGIUNGI QUESTO
                 await setPersistence(auth, browserLocalPersistence);
-                alert('Persistenza OK, faccio redirect'); // AGGIUNGI QUESTO
                 await signInWithRedirect(auth, provider);
                 return null;
             } catch (error) {
-                alert('ERRORE: ' + error.message); // AGGIUNGI QUESTO
                 console.error('❌ Errore in handleLogin mobile:', error);
                 throw error;
             }

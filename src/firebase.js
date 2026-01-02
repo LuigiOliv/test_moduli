@@ -18,3 +18,12 @@ initializeApp(firebaseConfig);
 // Export initialized instances
 export const db = getFirestore();
 export const auth = getAuth();
+
+// 🔧 FIX: Setta persistenza LOCAL globalmente per mobile
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log('✅ Firebase Auth persistence settata su LOCAL');
+  })
+  .catch((error) => {
+    console.error('❌ Errore settaggio persistence:', error);
+  });
