@@ -1,43 +1,63 @@
+/* Barra di navigazione mobile - bottom fixed */
 .nav-tabs {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
+    width: 100%;
     z-index: 999;
-    margin-bottom: 0;
-    border-top: 2px solid var(--volt);
-    border-bottom: none;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
-    padding: 8px 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: stretch;
     background: var(--bg-dark);
+    border-top: 2px solid var(--volt);
+    padding: 8px 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .nav-tab {
     flex: 1;
-    padding: 8px 4px;
-    font-size: 0.75rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    min-height: 60px;
     justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    min-height: 60px;
+    font-size: 0.75rem;
+    font-family: 'Teko', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-tab:hover {
+    color: var(--volt);
+    background: rgba(210, 248, 0, 0.05);
 }
 
 .nav-tab.active {
+    color: black;
     background: var(--volt);
-    border-bottom: none;
-    border-top: 3px solid var(--volt);
+    font-weight: 700;
 }
 
 /* Spazio per contenuto sopra la bottom bar */
 .section-container,
 .content-wrapper,
-main {
-    padding-bottom: 80px !important;
+main,
+.admin-content,
+.matches-page,
+.players-list-page,
+.classifiche-page,
+.rating-form-container {
+    padding-bottom: 90px !important;
 }
-
-
 
 /* Reset effetti indesiderati */
 .nav-tab,
@@ -49,16 +69,16 @@ main {
     -webkit-box-shadow: none !important;
 }
 
-/* Tablet: piÃ¹ spazio e gap */
+/* Tablet: più spazio */
 @media (min-width: 768px) {
     .nav-tabs {
-        gap: 2px;
         padding: 10px 0;
     }
 
     .nav-tab {
-        font-size: 1.15rem;
-        padding: 10px 20px;
+        font-size: 1rem;
+        padding: 10px 16px;
+        min-height: 70px;
     }
 }
 
