@@ -915,7 +915,7 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
 
             {showSuccess && <div className="success-message">✓ {successMessage}</div>}
 
-            <div className="admin-tabs-nav" style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+            <div className="admin-tabs-nav">
                 <button
                     className={`admin-tab-btn${activeTab === 'matches' ? ' active' : ''}`}
                     onClick={() => setActiveTab('matches')}
@@ -935,815 +935,829 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                     ⚙️ Sistema
                 </button>
             </div>
-            {activeTab === 'matches' && (
-                <div className="settings-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <h3>🏆 Gestione Partite</h3>
-                        <button className="btn btn-primary" onClick={() => setShowCreateMatch(!showCreateMatch)}>
-                            {showCreateMatch ? '✕ Annulla' : '+ Crea Partita'}
-                        </button>
-                    </div>
-                    {showCreateMatch && (
-                        <div className="admin-create-match">
-                            <h4>Crea Nuova Partita</h4>
-
-                            <div className="form-group">
-                                <label>Data Partita *</label>
-                                <input
-                                    type="date"
-                                    value={newMatchDate}
-                                    onChange={(e) => setNewMatchDate(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Orario *</label>
-                                <input
-                                    type="time"
-                                    value={newMatchTime}
-                                    onChange={(e) => setNewMatchTime(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Location *</label>
-                                <input
-                                    type="text"
-                                    value={newMatchLocation}
-                                    onChange={(e) => setNewMatchLocation(e.target.value)}
-                                    placeholder="Es: Campo SuperSantos, Portici"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Max Giocatori (numero pari: 10, 12, 14, 16, 18, 20)</label>
-                                <select
-                                    value={newMatchMaxPlayers}
-                                    onChange={(e) => setNewMatchMaxPlayers(e.target.value)}
-                                >
-                                    <option value="10">10 giocatori (5 vs 5)</option>
-                                    <option value="12">12 giocatori (6 vs 6)</option>
-                                    <option value="14">14 giocatori (7 vs 7)</option>
-                                    <option value="16">16 giocatori (8 vs 8)</option>
-                                    <option value="18">18 giocatori (9 vs 9)</option>
-                                    <option value="20">20 giocatori (10 vs 10)</option>
-                                </select>
-                            </div>
-
-                            <button
-                                className="btn btn-primary"
-                                onClick={handleCreateMatch}
-                                disabled={!newMatchDate || !newMatchTime || !newMatchLocation}
-                            >
-                                ✓ Crea Partita
+            {
+                activeTab === 'matches' && (
+                    <div className="settings-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3>🏆 Gestione Partite</h3>
+                            <button className="btn btn-primary" onClick={() => setShowCreateMatch(!showCreateMatch)}>
+                                {showCreateMatch ? '✕ Annulla' : '+ Crea Partita'}
                             </button>
                         </div>
-                    )}
+                        {showCreateMatch && (
+                            <div className="admin-create-match">
+                                <h4>Crea Nuova Partita</h4>
 
-                    <div className="admin-matches-list">
-                        {adminMatches.map(match => {
-                            const regs = adminRegistrations[match.id] || [];
-                            const hasTeams = match.teams && (match.teams.gialli.length > 0 || match.teams.verdi.length > 0);
-                            const canEdit = match.status === 'OPEN'; // Only OPEN matches can be edited
-
-                            return (
-                                <div key={match.id} className="admin-match-item">
-                                    <div className="admin-match-header">
-                                        <span className={`match-status ${match.status.toLowerCase()}`}>
-                                            {match.status === 'OPEN' && '📝 APERTA'}
-                                            {match.status === 'CLOSED' && '🔒 CHIUSA'}
-                                            {match.status === 'VOTING' && '⭐ VOTAZIONI'}
-                                            {match.status === 'COMPLETED' && '✅ FINITA'}
-                                            {match.status === 'CANCELLED' && '❌ ANNULL.'}
-                                        </span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span className="admin-match-date">{utils.formatMatchDate(match.date)}</span>
-                                            {canEdit && (
-                                                <button
-                                                    onClick={() => handleEditMatchInfo(match)}
-                                                    style={{
-                                                        background: 'var(--volt)',
-                                                        border: 'none',
-                                                        padding: '4px 8px',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        color: 'var(--bg-deep)',
-                                                        fontSize: '12px',
-                                                        fontWeight: 'bold'
-                                                    }}
-                                                    title="Modifica data/ora/location"
-                                                >
-                                                    ✏️ Modifica
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="admin-match-info">
-                                        <span>📍 {match.location}</span>
-                                        {editingMaxPlayers === match.id ? (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <span>👥</span>
-                                                <select
-                                                    value={newMaxPlayers}
-                                                    onChange={(e) => setNewMaxPlayers(e.target.value)}
-                                                    style={{
-                                                        background: 'var(--bg-deep)',
-                                                        color: 'white',
-                                                        border: '1px solid var(--volt)',
-                                                        padding: '4px 8px',
-                                                        borderRadius: '4px',
-                                                        fontSize: '13px'
-                                                    }}
-                                                >
-                                                    <option value="10">10</option>
-                                                    <option value="12">12</option>
-                                                    <option value="14">14</option>
-                                                    <option value="16">16</option>
-                                                    <option value="18">18</option>
-                                                    <option value="20">20</option>
-                                                </select>
-                                                <button
-                                                    onClick={() => handleSaveMaxPlayers(match.id)}
-                                                    style={{
-                                                        background: '#48bb78',
-                                                        border: 'none',
-                                                        padding: '4px 8px',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        color: 'white',
-                                                        fontSize: '12px'
-                                                    }}
-                                                >
-                                                    ✓
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingMaxPlayers(null);
-                                                        setNewMaxPlayers('');
-                                                    }}
-                                                    style={{
-                                                        background: '#718096',
-                                                        border: 'none',
-                                                        padding: '4px 8px',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        color: 'white',
-                                                        fontSize: '12px'
-                                                    }}
-                                                >
-                                                    ✕
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <span
-                                                onClick={() => canEdit && handleEditMaxPlayers(match.id, match.maxPlayers)}
-                                                style={{
-                                                    cursor: canEdit ? 'pointer' : 'default',
-                                                    textDecoration: canEdit ? 'underline' : 'none'
-                                                }}
-                                                title={canEdit ? "Click per modificare" : ""}
-                                            >
-                                                👥 {regs.length}/{match.maxPlayers}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div className="admin-match-actions">
-                                        {match.status === 'OPEN' && (
-                                            <button
-                                                className="admin-action-btn close"
-                                                onClick={() => handleCloseRegistrations(match.id)}
-                                            >
-                                                🔒 Chiudi Iscrizioni
-                                            </button>
-                                        )}
-                                        {match.status === 'CLOSED' && (
-                                            <>
-                                                <button
-                                                    className="admin-action-btn reopen"
-                                                    onClick={() => handleReopenRegistrations(match.id)}
-                                                >
-                                                    🔓 Riapri Iscrizioni
-                                                </button>
-                                                <button
-                                                    className="admin-action-btn assign"
-                                                    onClick={() => handleOpenTeamAssignment(match.id)}
-                                                >
-                                                    👥 Assegna Squadre
-                                                </button>
-                                                <button
-                                                    className="admin-action-btn score"
-                                                    onClick={() => handleOpenScoreModal(match.id)}
-                                                >
-                                                    ⚽ Inserisci Risultato
-                                                </button>
-                                            </>
-                                        )}
-                                        {match.status === 'VOTING' && (
-                                            <>
-                                                <button
-                                                    className="admin-action-btn reopen"
-                                                    onClick={() => handleReopenRegistrations(match.id)}
-                                                >
-                                                    🔙 Torna a Iscrizioni
-                                                </button>
-                                                <button
-                                                    className="admin-action-btn score"
-                                                    onClick={() => handleOpenScoreModal(match.id)}
-                                                >
-                                                    ⚽ Inserisci Risultato
-                                                </button>
-                                            </>
-                                        )}
-                                        {match.status === 'COMPLETED' && (
-                                            <button
-                                                className="admin-action-btn reopen"
-                                                onClick={() => handleReopenRegistrations(match.id)}
-                                            >
-                                                🔙 Riapri Partita
-                                            </button>
-                                        )}
-                                        {/* ✅ NUOVO: Bottone Annulla per partite OPEN o CLOSED */}
-                                        {(match.status === 'OPEN' || match.status === 'CLOSED') && (
-                                            <button
-                                                className="admin-action-btn danger"
-                                                onClick={() => handleCancelMatch(match.id)}
-                                                title="Annulla partita per maltempo o altri motivi"
-                                            >
-                                                ❌ Annulla Partita
-                                            </button>
-                                        )}
-
-                                        {/* ✅ NUOVO: Bottone Riapri per partite CANCELLED */}
-                                        {match.status === 'CANCELLED' && (
-                                            <button
-                                                className="admin-action-btn success"
-                                                onClick={() => handleReopenCancelledMatch(match.id)}
-                                                title="Riapri partita annullata"
-                                            >
-                                                🔓 Riapri Partita
-                                            </button>
-                                        )}
-                                        <button
-                                            className="admin-action-btn delete"
-                                            onClick={() => handleDeleteMatch(match.id)}
-                                        >
-                                            🗑️ Elimina
-                                        </button>
-                                    </div>
+                                <div className="form-group">
+                                    <label>Data Partita *</label>
+                                    <input
+                                        type="date"
+                                        value={newMatchDate}
+                                        onChange={(e) => setNewMatchDate(e.target.value)}
+                                    />
                                 </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
 
-            {activeTab === 'players' && (
-                <div className="settings-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <h3 style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => setShowPlayersList(!showPlayersList)}>
-                            {showPlayersList ? '▼' : '▶'} 👥 Gestione Giocatori ({users.filter(u => !u.id.startsWith('seed')).length})
-                        </h3>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            {showPlayersList && <button className="btn btn-primary" onClick={handleAddPlayer}>+ Aggiungi</button>}
-                            <button className="btn btn-secondary" onClick={() => setShowPlayersList(!showPlayersList)}>
-                                {showPlayersList ? 'Comprimi' : 'Espandi'}
-                            </button>
-                        </div>
-                    </div>
+                                <div className="form-group">
+                                    <label>Orario *</label>
+                                    <input
+                                        type="time"
+                                        value={newMatchTime}
+                                        onChange={(e) => setNewMatchTime(e.target.value)}
+                                    />
+                                </div>
 
-                    {showPlayersList && (
-                        <div className="admin-player-list">
-                            {users.filter(u => !u.id.startsWith('seed')).map((player, index) => {
-                                const voteCount = utils.countVotes(player.id, votes);
-                                const averages = utils.calculateAverages(player.id, votes);
-                                const overall = utils.calculateOverall(averages);
+                                <div className="form-group">
+                                    <label>Location *</label>
+                                    <input
+                                        type="text"
+                                        value={newMatchLocation}
+                                        onChange={(e) => setNewMatchLocation(e.target.value)}
+                                        placeholder="Es: Campo SuperSantos, Portici"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Max Giocatori (numero pari: 10, 12, 14, 16, 18, 20)</label>
+                                    <select
+                                        value={newMatchMaxPlayers}
+                                        onChange={(e) => setNewMatchMaxPlayers(e.target.value)}
+                                    >
+                                        <option value="10">10 giocatori (5 vs 5)</option>
+                                        <option value="12">12 giocatori (6 vs 6)</option>
+                                        <option value="14">14 giocatori (7 vs 7)</option>
+                                        <option value="16">16 giocatori (8 vs 8)</option>
+                                        <option value="18">18 giocatori (9 vs 9)</option>
+                                        <option value="20">20 giocatori (10 vs 10)</option>
+                                    </select>
+                                </div>
+
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleCreateMatch}
+                                    disabled={!newMatchDate || !newMatchTime || !newMatchLocation}
+                                >
+                                    ✓ Crea Partita
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="admin-matches-list">
+                            {adminMatches.map(match => {
+                                const regs = adminRegistrations[match.id] || [];
+                                const hasTeams = match.teams && (match.teams.gialli.length > 0 || match.teams.verdi.length > 0);
+                                const canEdit = match.status === 'OPEN'; // Only OPEN matches can be edited
 
                                 return (
-                                    <div key={player.id} className="admin-player-item">
-                                        <span style={{ color: '#a0aec0', width: '25px' }}>{index + 1}.</span>
-
-                                        {editingPlayer === player.id ? (
-                                            <div style={{ display: 'flex', gap: '10px', flex: 1 }}>
-                                                <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="admin-input" autoFocus />
-                                                <button onClick={() => handleSaveName(player.id)} className="admin-btn btn-save">✓</button>
-                                                <button onClick={() => setEditingPlayer(null)} className="admin-btn btn-cancel">✕</button>
+                                    <div key={match.id} className="admin-match-item">
+                                        <div className="admin-match-header">
+                                            <span className={`match-status ${match.status.toLowerCase()}`}>
+                                                {match.status === 'OPEN' && '📝 APERTA'}
+                                                {match.status === 'CLOSED' && '🔒 CHIUSA'}
+                                                {match.status === 'VOTING' && '⭐ VOTAZIONI'}
+                                                {match.status === 'COMPLETED' && '✅ FINITA'}
+                                                {match.status === 'CANCELLED' && '❌ ANNULL.'}
+                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span className="admin-match-date">{utils.formatMatchDate(match.date)}</span>
+                                                {canEdit && (
+                                                    <button
+                                                        onClick={() => handleEditMatchInfo(match)}
+                                                        style={{
+                                                            background: 'var(--volt)',
+                                                            border: 'none',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            color: 'var(--bg-deep)',
+                                                            fontSize: '12px',
+                                                            fontWeight: 'bold'
+                                                        }}
+                                                        title="Modifica data/ora/location"
+                                                    >
+                                                        ✏️ Modifica
+                                                    </button>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <>
-                                                <span style={{ fontWeight: '600', minWidth: '140px' }}>{player.name}</span>
-                                                <span style={{ color: '#718096', fontSize: '13px', flex: 1 }}>{player.claimed ? `✓ ${player.email}` : '○ Non reclamato'}</span>
-                                                <span style={{ color: '#667eea', fontSize: '13px' }}>OVR: {overall ? utils.toBase10(overall).toFixed(2) : '-'} ({voteCount} voti)</span>
-                                                <div style={{ display: 'flex', gap: '6px' }}>
-                                                    <button onClick={() => handleEditName(player)} className="admin-btn">✏️</button>
-                                                    <button onClick={() => handleEditVotes(player)} className="admin-btn btn-chart">📊</button>
-                                                    <button onClick={() => handleDeletePlayer(player.id)} className="admin-btn btn-delete">🗑️</button>
+                                        </div>
+
+                                        <div className="admin-match-info">
+                                            <span>📍 {match.location}</span>
+                                            {editingMaxPlayers === match.id ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span>👥</span>
+                                                    <select
+                                                        value={newMaxPlayers}
+                                                        onChange={(e) => setNewMaxPlayers(e.target.value)}
+                                                        style={{
+                                                            background: 'var(--bg-deep)',
+                                                            color: 'white',
+                                                            border: '1px solid var(--volt)',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '4px',
+                                                            fontSize: '13px'
+                                                        }}
+                                                    >
+                                                        <option value="10">10</option>
+                                                        <option value="12">12</option>
+                                                        <option value="14">14</option>
+                                                        <option value="16">16</option>
+                                                        <option value="18">18</option>
+                                                        <option value="20">20</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={() => handleSaveMaxPlayers(match.id)}
+                                                        style={{
+                                                            background: '#48bb78',
+                                                            border: 'none',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            color: 'white',
+                                                            fontSize: '12px'
+                                                        }}
+                                                    >
+                                                        ✓
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingMaxPlayers(null);
+                                                            setNewMaxPlayers('');
+                                                        }}
+                                                        style={{
+                                                            background: '#718096',
+                                                            border: 'none',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            color: 'white',
+                                                            fontSize: '12px'
+                                                        }}
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </div>
-                                            </>
-                                        )}
+                                            ) : (
+                                                <span
+                                                    onClick={() => canEdit && handleEditMaxPlayers(match.id, match.maxPlayers)}
+                                                    style={{
+                                                        cursor: canEdit ? 'pointer' : 'default',
+                                                        textDecoration: canEdit ? 'underline' : 'none'
+                                                    }}
+                                                    title={canEdit ? "Click per modificare" : ""}
+                                                >
+                                                    👥 {regs.length}/{match.maxPlayers}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="admin-match-actions">
+                                            {match.status === 'OPEN' && (
+                                                <button
+                                                    className="admin-action-btn close"
+                                                    onClick={() => handleCloseRegistrations(match.id)}
+                                                >
+                                                    🔒 Chiudi Iscrizioni
+                                                </button>
+                                            )}
+                                            {match.status === 'CLOSED' && (
+                                                <>
+                                                    <button
+                                                        className="admin-action-btn reopen"
+                                                        onClick={() => handleReopenRegistrations(match.id)}
+                                                    >
+                                                        🔓 Riapri Iscrizioni
+                                                    </button>
+                                                    <button
+                                                        className="admin-action-btn assign"
+                                                        onClick={() => handleOpenTeamAssignment(match.id)}
+                                                    >
+                                                        👥 Assegna Squadre
+                                                    </button>
+                                                    <button
+                                                        className="admin-action-btn score"
+                                                        onClick={() => handleOpenScoreModal(match.id)}
+                                                    >
+                                                        ⚽ Inserisci Risultato
+                                                    </button>
+                                                </>
+                                            )}
+                                            {match.status === 'VOTING' && (
+                                                <>
+                                                    <button
+                                                        className="admin-action-btn reopen"
+                                                        onClick={() => handleReopenRegistrations(match.id)}
+                                                    >
+                                                        🔙 Torna a Iscrizioni
+                                                    </button>
+                                                    <button
+                                                        className="admin-action-btn score"
+                                                        onClick={() => handleOpenScoreModal(match.id)}
+                                                    >
+                                                        ⚽ Inserisci Risultato
+                                                    </button>
+                                                </>
+                                            )}
+                                            {match.status === 'COMPLETED' && (
+                                                <button
+                                                    className="admin-action-btn reopen"
+                                                    onClick={() => handleReopenRegistrations(match.id)}
+                                                >
+                                                    🔙 Riapri Partita
+                                                </button>
+                                            )}
+                                            {/* ✅ NUOVO: Bottone Annulla per partite OPEN o CLOSED */}
+                                            {(match.status === 'OPEN' || match.status === 'CLOSED') && (
+                                                <button
+                                                    className="admin-action-btn danger"
+                                                    onClick={() => handleCancelMatch(match.id)}
+                                                    title="Annulla partita per maltempo o altri motivi"
+                                                >
+                                                    ❌ Annulla Partita
+                                                </button>
+                                            )}
+
+                                            {/* ✅ NUOVO: Bottone Riapri per partite CANCELLED */}
+                                            {match.status === 'CANCELLED' && (
+                                                <button
+                                                    className="admin-action-btn success"
+                                                    onClick={() => handleReopenCancelledMatch(match.id)}
+                                                    title="Riapri partita annullata"
+                                                >
+                                                    🔓 Riapri Partita
+                                                </button>
+                                            )}
+                                            <button
+                                                className="admin-action-btn delete"
+                                                onClick={() => handleDeleteMatch(match.id)}
+                                            >
+                                                🗑️ Elimina
+                                            </button>
+                                        </div>
                                     </div>
                                 );
                             })}
                         </div>
-                    )}
-                </div>
-            )}
+                    </div>
+                )
+            }
 
-            {activeTab === 'system' && (
-                <>
+            {
+                activeTab === 'players' && (
                     <div className="settings-group">
-                        <h3>💾 Backup Database</h3>
-                        <p>Esporta o importa tutti i dati (utenti e voti) per fare backup o ripristinare</p>
-                        <div style={{ display: 'flex', gap: '15px', marginTop: '15px' }}>
-                            <button className="btn btn-primary" onClick={() => {
-                                const data = { users, votes, timestamp: Date.now(), date: new Date().toISOString() };
-                                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `calcetto_backup_${new Date().toISOString().split('T')[0]}.json`;
-                                a.click();
-                                showSuccessMsg('Backup esportato!');
-                            }}>📥 Esporta Backup</button>
-                            <button className="btn btn-secondary" onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = '.json';
-                                input.onchange = async (e) => {
-                                    try {
-                                        const file = e.target.files[0];
-                                        const text = await file.text();
-                                        const data = JSON.parse(text);
-                                        if (!confirm('⚠️ ATTENZIONE: Questo sovrascriverà tutti i dati attuali. Continuare?')) return;
-                                        if (data.users) await storage.setUsers(data.users);
-                                        if (data.votes) await storage.setVotes(data.votes);
-                                        showSuccessMsg('Backup importato!');
-                                        setTimeout(() => window.location.reload(), 1000);
-                                    } catch (err) {
-                                        alert('Errore durante l\'importazione: ' + err.message);
-                                    }
-                                };
-                                input.click();
-                            }}>📤 Importa Backup</button>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h3 style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => setShowPlayersList(!showPlayersList)}>
+                                {showPlayersList ? '▼' : '▶'} 👥 Gestione Giocatori ({users.filter(u => !u.id.startsWith('seed')).length})
+                            </h3>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                {showPlayersList && <button className="btn btn-primary" onClick={handleAddPlayer}>+ Aggiungi</button>}
+                                <button className="btn btn-secondary" onClick={() => setShowPlayersList(!showPlayersList)}>
+                                    {showPlayersList ? 'Comprimi' : 'Espandi'}
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="settings-group admin-danger-zone">
-                        <h3>⚠️ Zona Pericolosa</h3>
-                        <p>Azioni irreversibili!</p>
-                        <button className="btn btn-danger" onClick={handleFullReset}>🗑️ Reset Completo</button>
-                    </div>
-                </>
-            )}
+                        {showPlayersList && (
+                            <div className="admin-player-list">
+                                {users.filter(u => !u.id.startsWith('seed')).map((player, index) => {
+                                    const voteCount = utils.countVotes(player.id, votes);
+                                    const averages = utils.calculateAverages(player.id, votes);
+                                    const overall = utils.calculateOverall(averages);
 
-            {/* MODAL MODIFICA VOTI */}
-            {editingVotes && (
-                <div className="modal-overlay">
-                    <div className="modal-content modal-large">
-                        <h2>📊 Modifica: {editingVotes.name}</h2>
-                        <p>Inserisci valori 1-4. Verranno creati 8 voti seed.</p>
-                        {['tecniche', 'tattiche', 'fisiche'].map(category => (
-                            <div key={category} className="vote-edit-category">
-                                <h4 className={`category-${category}`}>{category}</h4>
-                                <div className="vote-edit-grid">
-                                    {SKILLS[category].map(skill => (
-                                        <div key={skill} className="vote-edit-item">
-                                            <label>{skill}</label>
-                                            <input type="number" min="1" max="4" step="0.01" value={voteValues[skill] || ''} onChange={(e) => setVoteValues({ ...voteValues, [skill]: e.target.value })} />
+                                    return (
+                                        <div key={player.id} className="admin-player-item">
+                                            <span style={{ color: '#a0aec0', width: '25px' }}>{index + 1}.</span>
+
+                                            {editingPlayer === player.id ? (
+                                                <div style={{ display: 'flex', gap: '10px', flex: 1 }}>
+                                                    <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="admin-input" autoFocus />
+                                                    <button onClick={() => handleSaveName(player.id)} className="admin-btn btn-save">✓</button>
+                                                    <button onClick={() => setEditingPlayer(null)} className="admin-btn btn-cancel">✕</button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <span style={{ fontWeight: '600', minWidth: '140px' }}>{player.name}</span>
+                                                    <span style={{ color: '#718096', fontSize: '13px', flex: 1 }}>{player.claimed ? `✓ ${player.email}` : '○ Non reclamato'}</span>
+                                                    <span style={{ color: '#667eea', fontSize: '13px' }}>OVR: {overall ? utils.toBase10(overall).toFixed(2) : '-'} ({voteCount} voti)</span>
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <button onClick={() => handleEditName(player)} className="admin-btn">✏️</button>
+                                                        <button onClick={() => handleEditVotes(player)} className="admin-btn btn-chart">📊</button>
+                                                        <button onClick={() => handleDeletePlayer(player.id)} className="admin-btn btn-delete">🗑️</button>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                        <div className="modal-actions">
-                            <button className="btn btn-secondary" onClick={() => setEditingVotes(null)}>Annulla</button>
-                            <button className="btn btn-primary" onClick={handleSaveVotes}>Salva</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL MODIFICA INFO PARTITA */}
-            {showEditMatchModal && (
-                <div className="modal-overlay" onClick={handleCancelEditMatchInfo}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>✏️ Modifica Informazioni Partita</h3>
-                            <button className="modal-close" onClick={handleCancelEditMatchInfo}>✕</button>
-                        </div>
-
-                        <div className="modal-body">
-                            <div className="form-group">
-                                <label>Data Partita *</label>
-                                <input
-                                    type="date"
-                                    value={editDate}
-                                    onChange={(e) => setEditDate(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        background: 'var(--bg-deep)',
-                                        border: '1px solid var(--volt)',
-                                        borderRadius: '8px',
-                                        color: 'white',
-                                        fontSize: '14px'
-                                    }}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Orario *</label>
-                                <input
-                                    type="time"
-                                    value={editTime}
-                                    onChange={(e) => setEditTime(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        background: 'var(--bg-deep)',
-                                        border: '1px solid var(--volt)',
-                                        borderRadius: '8px',
-                                        color: 'white',
-                                        fontSize: '14px'
-                                    }}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Location *</label>
-                                <input
-                                    type="text"
-                                    value={editLocation}
-                                    onChange={(e) => setEditLocation(e.target.value)}
-                                    placeholder="Es: Campo SuperSantos, Portici"
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        background: 'var(--bg-deep)',
-                                        border: '1px solid var(--volt)',
-                                        borderRadius: '8px',
-                                        color: 'white',
-                                        fontSize: '14px'
-                                    }}
-                                />
-                            </div>
-
-                            <div style={{
-                                marginTop: '20px',
-                                padding: '12px',
-                                background: 'rgba(251, 191, 36, 0.1)',
-                                border: '1px solid rgba(251, 191, 36, 0.3)',
-                                borderRadius: '8px',
-                                fontSize: '13px',
-                                color: '#fbbf24'
-                            }}>
-                                ℹ️ <strong>Nota:</strong> Le scadenze (iscrizioni e votazioni) verranno ricalcolate automaticamente in base alla nuova data.
-                            </div>
-                        </div>
-
-                        <div className="modal-footer">
-                            <button
-                                className="btn btn-secondary"
-                                onClick={handleCancelEditMatchInfo}
-                            >
-                                ✕ Annulla
-                            </button>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => handleSaveMatchInfo(editingMatchInfo)}
-                                disabled={!editDate || !editTime || !editLocation.trim()}
-                            >
-                                ✓ Salva Modifiche
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showTeamAssignment && selectedMatchForTeams && (
-                <div className="modal-overlay">
-                    <div className="modal-content modal-large">
-                        <h2>👥 Assegna Squadre - {utils.formatMatchDate(selectedMatchForTeams.date)}</h2>
-                        <p>Trascina i giocatori tra le squadre o usa il bilanciamento automatico</p>
-
-                        {teamGialli.length > 0 && teamVerdi.length > 0 && (
-                            <div style={{
-                                background: 'rgba(210, 248, 0, 0.1)',
-                                border: '1px solid rgba(210, 248, 0, 0.3)',
-                                borderRadius: '8px',
-                                padding: '15px',
-                                marginTop: '20px',
-                                marginBottom: '10px'
-                            }}>
-                                <h4 style={{ color: 'var(--volt)', marginBottom: '15px', textAlign: 'center' }}>
-                                    📊 Statistiche Bilanciamento
-                                </h4>
-                                <div style={{ display: 'flex', gap: '30px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                    {(() => {
-                                        const gialliStats = calculateTeamStats(teamGialli);
-                                        const verdiStats = calculateTeamStats(teamVerdi);
-                                        const diff = Math.abs(gialliStats.avgOverall - verdiStats.avgOverall);
-                                        const isBalanced = diff < 0.3;
-
-                                        return (
-                                            <>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '5px' }}>GIALLI</div>
-                                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFD700' }}>
-                                                        {utils.toBase10(gialliStats.avgOverall).toFixed(2)}
-                                                    </div>
-                                                    <div style={{ fontSize: '11px', color: '#a0aec0', marginTop: '3px' }}>
-                                                        {gialliStats.count} giocatori | {gialliStats.goalkeepers} 🧤
-                                                    </div>
-                                                </div>
-
-                                                <div style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    justifyContent: 'center',
-                                                    alignItems: 'center',
-                                                    gap: '5px'
-                                                }}>
-                                                    <div style={{ fontSize: '18px' }}>⚖️</div>
-                                                    <div style={{
-                                                        fontSize: '12px',
-                                                        fontWeight: 'bold',
-                                                        color: isBalanced ? '#48bb78' : '#f59e0b',
-                                                        padding: '4px 10px',
-                                                        background: isBalanced ? 'rgba(72, 187, 120, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                                                        borderRadius: '12px'
-                                                    }}>
-                                                        {isBalanced ? '✓ BILANCIATE' : `Δ ${utils.toBase10(diff).toFixed(2)}`}
-                                                    </div>
-                                                </div>
-
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '5px' }}>VERDI</div>
-                                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#48bb78' }}>
-                                                        {utils.toBase10(verdiStats.avgOverall).toFixed(2)}
-                                                    </div>
-                                                    <div style={{ fontSize: '11px', color: '#a0aec0', marginTop: '3px' }}>
-                                                        {verdiStats.count} giocatori | {verdiStats.goalkeepers} 🧤
-                                                    </div>
-                                                </div>
-                                            </>
-                                        );
-                                    })()}
-                                </div>
+                                    );
+                                })}
                             </div>
                         )}
+                    </div>
+                )
+            }
 
-                        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-                            <div style={{ flex: 1, background: 'rgba(255, 215, 0, 0.1)', padding: '15px', borderRadius: '8px', border: '2px solid #FFD700' }}>
-                                <h3 style={{ color: '#FFD700', marginBottom: '15px' }}>
-                                    🟡 GIALLI ({teamGialli.length})
-                                </h3>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {teamGialli.map(player => {
-                                        const userData = users.find(u => u.id === player.playerId);
-                                        const averages = utils.calculateAverages(player.playerId, votes, userData);
-                                        const overall = utils.calculateOverall(averages) || 2.5;
+            {
+                activeTab === 'system' && (
+                    <>
+                        <div className="settings-group">
+                            <h3>💾 Backup Database</h3>
+                            <p>Esporta o importa tutti i dati (utenti e voti) per fare backup o ripristinare</p>
+                            <div style={{ display: 'flex', gap: '15px', marginTop: '15px' }}>
+                                <button className="btn btn-primary" onClick={() => {
+                                    const data = { users, votes, timestamp: Date.now(), date: new Date().toISOString() };
+                                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `calcetto_backup_${new Date().toISOString().split('T')[0]}.json`;
+                                    a.click();
+                                    showSuccessMsg('Backup esportato!');
+                                }}>📥 Esporta Backup</button>
+                                <button className="btn btn-secondary" onClick={() => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = '.json';
+                                    input.onchange = async (e) => {
+                                        try {
+                                            const file = e.target.files[0];
+                                            const text = await file.text();
+                                            const data = JSON.parse(text);
+                                            if (!confirm('⚠️ ATTENZIONE: Questo sovrascriverà tutti i dati attuali. Continuare?')) return;
+                                            if (data.users) await storage.setUsers(data.users);
+                                            if (data.votes) await storage.setVotes(data.votes);
+                                            showSuccessMsg('Backup importato!');
+                                            setTimeout(() => window.location.reload(), 1000);
+                                        } catch (err) {
+                                            alert('Errore durante l\'importazione: ' + err.message);
+                                        }
+                                    };
+                                    input.click();
+                                }}>📤 Importa Backup</button>
+                            </div>
+                        </div>
 
-                                        return (
-                                            <div
-                                                key={player.playerId}
-                                                style={{
-                                                    background: 'rgba(255, 255, 255, 0.05)',
-                                                    padding: '10px',
-                                                    borderRadius: '4px',
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <span style={{
-                                                        background: 'rgba(255, 215, 0, 0.2)',
-                                                        padding: '2px 8px',
-                                                        borderRadius: '4px',
-                                                        fontSize: '12px',
-                                                        fontWeight: 'bold',
-                                                        color: '#FFD700',
-                                                        minWidth: '40px',
-                                                        textAlign: 'center'
-                                                    }}>
-                                                        {utils.toBase10(overall).toFixed(1)}
-                                                    </span>
-                                                    <span>
-                                                        {player.playerName}
-                                                        {player.isGoalkeeper && ' 🧤'}
-                                                    </span>
-                                                </div>
-                                                <button
-                                                    onClick={() => movePlayerToTeam(player, 'gialli', 'verdi')}
-                                                    style={{
-                                                        background: '#48bb78',
-                                                        border: 'none',
-                                                        padding: '4px 12px',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        fontSize: '12px',
-                                                        color: 'white'
-                                                    }}
-                                                >
-                                                    → VERDI
-                                                </button>
+                        <div className="settings-group admin-danger-zone">
+                            <h3>⚠️ Zona Pericolosa</h3>
+                            <p>Azioni irreversibili!</p>
+                            <button className="btn btn-danger" onClick={handleFullReset}>🗑️ Reset Completo</button>
+                        </div>
+                    </>
+                )
+            }
+
+            {/* MODAL MODIFICA VOTI */}
+            {
+                editingVotes && (
+                    <div className="modal-overlay">
+                        <div className="modal-content modal-large">
+                            <h2>📊 Modifica: {editingVotes.name}</h2>
+                            <p>Inserisci valori 1-4. Verranno creati 8 voti seed.</p>
+                            {['tecniche', 'tattiche', 'fisiche'].map(category => (
+                                <div key={category} className="vote-edit-category">
+                                    <h4 className={`category-${category}`}>{category}</h4>
+                                    <div className="vote-edit-grid">
+                                        {SKILLS[category].map(skill => (
+                                            <div key={skill} className="vote-edit-item">
+                                                <label>{skill}</label>
+                                                <input type="number" min="1" max="4" step="0.01" value={voteValues[skill] || ''} onChange={(e) => setVoteValues({ ...voteValues, [skill]: e.target.value })} />
                                             </div>
-                                        );
-                                    })}
-                                    {teamGialli.length === 0 && (
-                                        <p style={{ textAlign: 'center', opacity: 0.5 }}>Nessun giocatore</p>
-                                    )}
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="modal-actions">
+                                <button className="btn btn-secondary" onClick={() => setEditingVotes(null)}>Annulla</button>
+                                <button className="btn btn-primary" onClick={handleSaveVotes}>Salva</button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* MODAL MODIFICA INFO PARTITA */}
+            {
+                showEditMatchModal && (
+                    <div className="modal-overlay" onClick={handleCancelEditMatchInfo}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>✏️ Modifica Informazioni Partita</h3>
+                                <button className="modal-close" onClick={handleCancelEditMatchInfo}>✕</button>
+                            </div>
+
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label>Data Partita *</label>
+                                    <input
+                                        type="date"
+                                        value={editDate}
+                                        onChange={(e) => setEditDate(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px',
+                                            background: 'var(--bg-deep)',
+                                            border: '1px solid var(--volt)',
+                                            borderRadius: '8px',
+                                            color: 'white',
+                                            fontSize: '14px'
+                                        }}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Orario *</label>
+                                    <input
+                                        type="time"
+                                        value={editTime}
+                                        onChange={(e) => setEditTime(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px',
+                                            background: 'var(--bg-deep)',
+                                            border: '1px solid var(--volt)',
+                                            borderRadius: '8px',
+                                            color: 'white',
+                                            fontSize: '14px'
+                                        }}
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Location *</label>
+                                    <input
+                                        type="text"
+                                        value={editLocation}
+                                        onChange={(e) => setEditLocation(e.target.value)}
+                                        placeholder="Es: Campo SuperSantos, Portici"
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px',
+                                            background: 'var(--bg-deep)',
+                                            border: '1px solid var(--volt)',
+                                            borderRadius: '8px',
+                                            color: 'white',
+                                            fontSize: '14px'
+                                        }}
+                                    />
+                                </div>
+
+                                <div style={{
+                                    marginTop: '20px',
+                                    padding: '12px',
+                                    background: 'rgba(251, 191, 36, 0.1)',
+                                    border: '1px solid rgba(251, 191, 36, 0.3)',
+                                    borderRadius: '8px',
+                                    fontSize: '13px',
+                                    color: '#fbbf24'
+                                }}>
+                                    ℹ️ <strong>Nota:</strong> Le scadenze (iscrizioni e votazioni) verranno ricalcolate automaticamente in base alla nuova data.
                                 </div>
                             </div>
 
-                            <div style={{ flex: 1, background: 'rgba(72, 187, 120, 0.1)', padding: '15px', borderRadius: '8px', border: '2px solid #48bb78' }}>
-                                <h3 style={{ color: '#48bb78', marginBottom: '15px' }}>
-                                    🟢 VERDI ({teamVerdi.length})
-                                </h3>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {teamVerdi.map(player => {
-                                        const userData = users.find(u => u.id === player.playerId);
-                                        const averages = utils.calculateAverages(player.playerId, votes, userData);
-                                        const overall = utils.calculateOverall(averages) || 2.5;
+                            <div className="modal-footer">
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={handleCancelEditMatchInfo}
+                                >
+                                    ✕ Annulla
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => handleSaveMatchInfo(editingMatchInfo)}
+                                    disabled={!editDate || !editTime || !editLocation.trim()}
+                                >
+                                    ✓ Salva Modifiche
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
-                                        return (
-                                            <div
-                                                key={player.playerId}
-                                                style={{
-                                                    background: 'rgba(255, 255, 255, 0.05)',
-                                                    padding: '10px',
-                                                    borderRadius: '4px',
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <span style={{
-                                                        background: 'rgba(72, 187, 120, 0.2)',
-                                                        padding: '2px 8px',
-                                                        borderRadius: '4px',
-                                                        fontSize: '12px',
-                                                        fontWeight: 'bold',
-                                                        color: '#48bb78',
-                                                        minWidth: '40px',
-                                                        textAlign: 'center'
+            {
+                showTeamAssignment && selectedMatchForTeams && (
+                    <div className="modal-overlay">
+                        <div className="modal-content modal-large">
+                            <h2>👥 Assegna Squadre - {utils.formatMatchDate(selectedMatchForTeams.date)}</h2>
+                            <p>Trascina i giocatori tra le squadre o usa il bilanciamento automatico</p>
+
+                            {teamGialli.length > 0 && teamVerdi.length > 0 && (
+                                <div style={{
+                                    background: 'rgba(210, 248, 0, 0.1)',
+                                    border: '1px solid rgba(210, 248, 0, 0.3)',
+                                    borderRadius: '8px',
+                                    padding: '15px',
+                                    marginTop: '20px',
+                                    marginBottom: '10px'
+                                }}>
+                                    <h4 style={{ color: 'var(--volt)', marginBottom: '15px', textAlign: 'center' }}>
+                                        📊 Statistiche Bilanciamento
+                                    </h4>
+                                    <div style={{ display: 'flex', gap: '30px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                        {(() => {
+                                            const gialliStats = calculateTeamStats(teamGialli);
+                                            const verdiStats = calculateTeamStats(teamVerdi);
+                                            const diff = Math.abs(gialliStats.avgOverall - verdiStats.avgOverall);
+                                            const isBalanced = diff < 0.3;
+
+                                            return (
+                                                <>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '5px' }}>GIALLI</div>
+                                                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFD700' }}>
+                                                            {utils.toBase10(gialliStats.avgOverall).toFixed(2)}
+                                                        </div>
+                                                        <div style={{ fontSize: '11px', color: '#a0aec0', marginTop: '3px' }}>
+                                                            {gialliStats.count} giocatori | {gialliStats.goalkeepers} 🧤
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        justifyContent: 'center',
+                                                        alignItems: 'center',
+                                                        gap: '5px'
                                                     }}>
-                                                        {utils.toBase10(overall).toFixed(1)}
-                                                    </span>
-                                                    <span>
-                                                        {player.playerName}
-                                                        {player.isGoalkeeper && ' 🧤'}
-                                                    </span>
-                                                </div>
-                                                <button
-                                                    onClick={() => movePlayerToTeam(player, 'verdi', 'gialli')}
+                                                        <div style={{ fontSize: '18px' }}>⚖️</div>
+                                                        <div style={{
+                                                            fontSize: '12px',
+                                                            fontWeight: 'bold',
+                                                            color: isBalanced ? '#48bb78' : '#f59e0b',
+                                                            padding: '4px 10px',
+                                                            background: isBalanced ? 'rgba(72, 187, 120, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                                            borderRadius: '12px'
+                                                        }}>
+                                                            {isBalanced ? '✓ BILANCIATE' : `Δ ${utils.toBase10(diff).toFixed(2)}`}
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '5px' }}>VERDI</div>
+                                                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#48bb78' }}>
+                                                            {utils.toBase10(verdiStats.avgOverall).toFixed(2)}
+                                                        </div>
+                                                        <div style={{ fontSize: '11px', color: '#a0aec0', marginTop: '3px' }}>
+                                                            {verdiStats.count} giocatori | {verdiStats.goalkeepers} 🧤
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+                                <div style={{ flex: 1, background: 'rgba(255, 215, 0, 0.1)', padding: '15px', borderRadius: '8px', border: '2px solid #FFD700' }}>
+                                    <h3 style={{ color: '#FFD700', marginBottom: '15px' }}>
+                                        🟡 GIALLI ({teamGialli.length})
+                                    </h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {teamGialli.map(player => {
+                                            const userData = users.find(u => u.id === player.playerId);
+                                            const averages = utils.calculateAverages(player.playerId, votes, userData);
+                                            const overall = utils.calculateOverall(averages) || 2.5;
+
+                                            return (
+                                                <div
+                                                    key={player.playerId}
                                                     style={{
-                                                        background: '#FFD700',
-                                                        border: 'none',
-                                                        padding: '4px 12px',
+                                                        background: 'rgba(255, 255, 255, 0.05)',
+                                                        padding: '10px',
                                                         borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        fontSize: '12px',
-                                                        color: 'black'
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center'
                                                     }}
                                                 >
-                                                    ← GIALLI
-                                                </button>
-                                            </div>
-                                        );
-                                    })}
-                                    {teamVerdi.length === 0 && (
-                                        <p style={{ textAlign: 'center', opacity: 0.5 }}>Nessun giocatore</p>
-                                    )}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <span style={{
+                                                            background: 'rgba(255, 215, 0, 0.2)',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '4px',
+                                                            fontSize: '12px',
+                                                            fontWeight: 'bold',
+                                                            color: '#FFD700',
+                                                            minWidth: '40px',
+                                                            textAlign: 'center'
+                                                        }}>
+                                                            {utils.toBase10(overall).toFixed(1)}
+                                                        </span>
+                                                        <span>
+                                                            {player.playerName}
+                                                            {player.isGoalkeeper && ' 🧤'}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => movePlayerToTeam(player, 'gialli', 'verdi')}
+                                                        style={{
+                                                            background: '#48bb78',
+                                                            border: 'none',
+                                                            padding: '4px 12px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '12px',
+                                                            color: 'white'
+                                                        }}
+                                                    >
+                                                        → VERDI
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                        {teamGialli.length === 0 && (
+                                            <p style={{ textAlign: 'center', opacity: 0.5 }}>Nessun giocatore</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div style={{ flex: 1, background: 'rgba(72, 187, 120, 0.1)', padding: '15px', borderRadius: '8px', border: '2px solid #48bb78' }}>
+                                    <h3 style={{ color: '#48bb78', marginBottom: '15px' }}>
+                                        🟢 VERDI ({teamVerdi.length})
+                                    </h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {teamVerdi.map(player => {
+                                            const userData = users.find(u => u.id === player.playerId);
+                                            const averages = utils.calculateAverages(player.playerId, votes, userData);
+                                            const overall = utils.calculateOverall(averages) || 2.5;
+
+                                            return (
+                                                <div
+                                                    key={player.playerId}
+                                                    style={{
+                                                        background: 'rgba(255, 255, 255, 0.05)',
+                                                        padding: '10px',
+                                                        borderRadius: '4px',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <span style={{
+                                                            background: 'rgba(72, 187, 120, 0.2)',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '4px',
+                                                            fontSize: '12px',
+                                                            fontWeight: 'bold',
+                                                            color: '#48bb78',
+                                                            minWidth: '40px',
+                                                            textAlign: 'center'
+                                                        }}>
+                                                            {utils.toBase10(overall).toFixed(1)}
+                                                        </span>
+                                                        <span>
+                                                            {player.playerName}
+                                                            {player.isGoalkeeper && ' 🧤'}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => movePlayerToTeam(player, 'verdi', 'gialli')}
+                                                        style={{
+                                                            background: '#FFD700',
+                                                            border: 'none',
+                                                            padding: '4px 12px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '12px',
+                                                            color: 'black'
+                                                        }}
+                                                    >
+                                                        ← GIALLI
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                        {teamVerdi.length === 0 && (
+                                            <p style={{ textAlign: 'center', opacity: 0.5 }}>Nessun giocatore</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                            <button
-                                className="btn btn-secondary"
-                                onClick={() => generateBalancedTeams(adminRegistrations[selectedMatchForTeams.id] || [])}
-                                style={{ marginRight: '10px' }}
-                            >
-                                🔄 Bilancia Automaticamente
-                            </button>
-                        </div>
+                            <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => generateBalancedTeams(adminRegistrations[selectedMatchForTeams.id] || [])}
+                                    style={{ marginRight: '10px' }}
+                                >
+                                    🔄 Bilancia Automaticamente
+                                </button>
+                            </div>
 
-                        <div className="modal-actions">
-                            <button className="btn btn-secondary" onClick={() => {
-                                setShowTeamAssignment(false);
-                                setSelectedMatchForTeams(null);
-                                setTeamGialli([]);
-                                setTeamVerdi([]);
-                            }}>
-                                Annulla
-                            </button>
-                            <button className="btn btn-primary" onClick={handleSaveTeams}>
-                                ✓ Salva Squadre
-                            </button>
+                            <div className="modal-actions">
+                                <button className="btn btn-secondary" onClick={() => {
+                                    setShowTeamAssignment(false);
+                                    setSelectedMatchForTeams(null);
+                                    setTeamGialli([]);
+                                    setTeamVerdi([]);
+                                }}>
+                                    Annulla
+                                </button>
+                                <button className="btn btn-primary" onClick={handleSaveTeams}>
+                                    ✓ Salva Squadre
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {showScoreModal && selectedMatchForScore && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h2>⚽ Inserisci Risultato - {utils.formatMatchDate(selectedMatchForScore.date)}</h2>
+            {
+                showScoreModal && selectedMatchForScore && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <h2>⚽ Inserisci Risultato - {utils.formatMatchDate(selectedMatchForScore.date)}</h2>
 
-                        <div style={{ display: 'flex', gap: '20px', marginTop: '20px', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ textAlign: 'center' }}>
-                                <label style={{ display: 'block', color: '#FFD700', marginBottom: '8px', fontWeight: 'bold' }}>
-                                    🟡 GIALLI
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={scoreGialli}
-                                    onChange={(e) => setScoreGialli(e.target.value)}
-                                    style={{
-                                        width: '80px',
-                                        height: '60px',
-                                        fontSize: '28px',
-                                        textAlign: 'center',
-                                        background: 'var(--bg-deep)',
-                                        border: '2px solid #FFD700',
-                                        color: 'white',
-                                        borderRadius: '8px'
-                                    }}
-                                />
+                            <div style={{ display: 'flex', gap: '20px', marginTop: '20px', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <label style={{ display: 'block', color: '#FFD700', marginBottom: '8px', fontWeight: 'bold' }}>
+                                        🟡 GIALLI
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={scoreGialli}
+                                        onChange={(e) => setScoreGialli(e.target.value)}
+                                        style={{
+                                            width: '80px',
+                                            height: '60px',
+                                            fontSize: '28px',
+                                            textAlign: 'center',
+                                            background: 'var(--bg-deep)',
+                                            border: '2px solid #FFD700',
+                                            color: 'white',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                </div>
+
+                                <span style={{ fontSize: '32px', fontWeight: 'bold' }}>-</span>
+
+                                <div style={{ textAlign: 'center' }}>
+                                    <label style={{ display: 'block', color: '#48bb78', marginBottom: '8px', fontWeight: 'bold' }}>
+                                        🟢 VERDI
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={scoreVerdi}
+                                        onChange={(e) => setScoreVerdi(e.target.value)}
+                                        style={{
+                                            width: '80px',
+                                            height: '60px',
+                                            fontSize: '28px',
+                                            textAlign: 'center',
+                                            background: 'var(--bg-deep)',
+                                            border: '2px solid #48bb78',
+                                            color: 'white',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                </div>
                             </div>
 
-                            <span style={{ fontSize: '32px', fontWeight: 'bold' }}>-</span>
-
-                            <div style={{ textAlign: 'center' }}>
-                                <label style={{ display: 'block', color: '#48bb78', marginBottom: '8px', fontWeight: 'bold' }}>
-                                    🟢 VERDI
-                                </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={scoreVerdi}
-                                    onChange={(e) => setScoreVerdi(e.target.value)}
-                                    style={{
-                                        width: '80px',
-                                        height: '60px',
-                                        fontSize: '28px',
-                                        textAlign: 'center',
-                                        background: 'var(--bg-deep)',
-                                        border: '2px solid #48bb78',
-                                        color: 'white',
-                                        borderRadius: '8px'
-                                    }}
-                                />
+                            <div style={{ marginTop: '30px' }}>
+                                <h4 style={{ marginBottom: '15px', color: 'var(--volt)' }}>🏆 Capocannoniere (opzionale)</h4>
+                                <div className="form-group">
+                                    <label>Nome Giocatore</label>
+                                    <input
+                                        type="text"
+                                        value={topScorer}
+                                        onChange={(e) => setTopScorer(e.target.value)}
+                                        placeholder="Es: Mario Rossi"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Numero Gol</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={topScorerGoals}
+                                        onChange={(e) => setTopScorerGoals(e.target.value)}
+                                        placeholder="Es: 3"
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        <div style={{ marginTop: '30px' }}>
-                            <h4 style={{ marginBottom: '15px', color: 'var(--volt)' }}>🏆 Capocannoniere (opzionale)</h4>
-                            <div className="form-group">
-                                <label>Nome Giocatore</label>
-                                <input
-                                    type="text"
-                                    value={topScorer}
-                                    onChange={(e) => setTopScorer(e.target.value)}
-                                    placeholder="Es: Mario Rossi"
-                                />
+                            <div className="modal-actions">
+                                <button className="btn btn-secondary" onClick={() => {
+                                    setShowScoreModal(false);
+                                    setSelectedMatchForScore(null);
+                                    setScoreGialli('');
+                                    setScoreVerdi('');
+                                    setTopScorer('');
+                                    setTopScorerGoals('');
+                                }}>
+                                    Annulla
+                                </button>
+                                <button className="btn btn-primary" onClick={handleSaveScore}>
+                                    ✓ Salva Risultato
+                                </button>
                             </div>
-                            <div className="form-group">
-                                <label>Numero Gol</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={topScorerGoals}
-                                    onChange={(e) => setTopScorerGoals(e.target.value)}
-                                    placeholder="Es: 3"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="modal-actions">
-                            <button className="btn btn-secondary" onClick={() => {
-                                setShowScoreModal(false);
-                                setSelectedMatchForScore(null);
-                                setScoreGialli('');
-                                setScoreVerdi('');
-                                setTopScorer('');
-                                setTopScorerGoals('');
-                            }}>
-                                Annulla
-                            </button>
-                            <button className="btn btn-primary" onClick={handleSaveScore}>
-                                ✓ Salva Risultato
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
 
