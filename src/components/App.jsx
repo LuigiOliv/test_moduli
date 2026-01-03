@@ -44,15 +44,6 @@ function App() {
 
     // 🔧 DEBUG: Verifica storage mobile
     useEffect(() => {
-        console.log('🔵 Inizio gestione auth');
-
-        // 🔧 Controlla se stiamo tornando da un redirect
-        const redirectPending = sessionStorage.getItem('calcetto_redirect_pending');
-        const redirectTime = sessionStorage.getItem('calcetto_redirect_time');
-        if (redirectPending) {
-            sessionStorage.removeItem('calcetto_redirect_pending');
-            sessionStorage.removeItem('calcetto_redirect_time');
-        }
         let unsubscribe;
         const initAuth = async () => {
             try {
@@ -128,8 +119,6 @@ function App() {
     }, []);
 
     const handleLogin = (email) => {
-        console.log('🔍 handleLogin ricevuto:', email);
-        console.log('🔍 typeof email:', typeof email);
         if (typeof email === 'object') {
             console.error('❌ ERRORE: email è un oggetto!', email);
         }

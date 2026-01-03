@@ -5,10 +5,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import utils from '../../utils.js';
 
 function Header({ user, onLogout, onOpenSettings, setActiveTab }) {
-    console.log('🔍 Header received user:', user);
-    console.log('🔍 user.email:', user?.email);
-    console.log('🔍 typeof user:', typeof user);
-    console.log('🔍 user keys:', user ? Object.keys(user) : 'null');
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
 
