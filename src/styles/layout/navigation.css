@@ -47,16 +47,10 @@
     font-weight: 700;
 }
 
-/* Spazio per contenuto sopra la bottom bar */
-.section-container,
-.content-wrapper,
-main,
-.admin-content,
-.matches-page,
-.players-list-page,
-.classifiche-page,
-.rating-form-container {
-    padding-bottom: 90px !important;
+/* Spazio per contenuto sopra la bottom bar - applica a .content */
+.app-container>.content {
+    padding-bottom: 100px !important;
+    min-height: calc(100vh - 60px);
 }
 
 /* Reset effetti indesiderati */
@@ -79,6 +73,10 @@ main,
         font-size: 1rem;
         padding: 10px 16px;
         min-height: 70px;
+    }
+
+    .app-container>.content {
+        padding-bottom: 110px !important;
     }
 }
 
@@ -129,4 +127,8 @@ main,
         -webkit-overflow-scrolling: touch;
         /* Smooth scroll iOS */
     }
+}
+
+.app-container>.content {
+    padding-bottom: 20px !important;
 }
