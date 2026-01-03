@@ -21,7 +21,6 @@ export function LoginPage({ onLogin }) {
             } else {
                 setError("Accesso fallito. Prova ad attivare 'Modalità Desktop' nel browser.");
             }
-            console.error(e);
         } finally {
             setLoading(false);
         }

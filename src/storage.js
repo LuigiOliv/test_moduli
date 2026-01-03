@@ -65,19 +65,15 @@ const storage = {
 
     // ✅ Login intelligente: popup desktop, redirect mobile
     handleLogin: async () => {
-        console.log('🔵 handleLogin chiamato');
         const { auth } = await import('./firebase.js');
         const { GoogleAuthProvider, signInWithPopup, signInWithRedirect, setPersistence, browserLocalPersistence } = await import('firebase/auth');
         const provider = new GoogleAuthProvider();
 
         // 🔧 Prova SEMPRE popup prima (molti mobile moderni lo supportano)
         try {
-            console.log('🔵 Tentativo popup...');
             const result = await signInWithPopup(auth, provider);
-            console.log('✅ Popup success:', result.user.email);
             return result.user;
         } catch (popupError) {
-            console.log('⚠️ Popup fallito:', popupError.code);
 
             // Se popup è bloccato/chiuso dall'utente, NON usare redirect
             if (popupError.code === 'auth/popup-closed-by-user' ||
@@ -91,7 +87,6 @@ const storage = {
             }
 
             // Fallback redirect solo se proprio necessario
-            console.log('🔵 Fallback a redirect...');
             await setPersistence(auth, browserLocalPersistence);
             sessionStorage.setItem('calcetto_redirect_pending', 'true');
             await signInWithRedirect(auth, provider);

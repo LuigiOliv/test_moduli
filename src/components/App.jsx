@@ -1,7 +1,7 @@
 // src/components/App.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { auth } from '../firebase.js';
 import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import storage from '../storage.js';
@@ -27,26 +27,6 @@ function App() {
             sessionStorage.removeItem('pendingEmail');
         }
     };
-    const hasCheckedRedirect = useRef(false);
-
-
-    // ✅ NUOVO: Gestisci il ritorno dal redirect di Google
-    //useEffect(() => {
-    //  const checkRedirectResult = async () => {
-    //      try {
-    //        hasCheckedRedirect.current = true; // 🔧 AGGIUNGI QUESTA RIGA
-    //      const result = await getRedirectResult(auth);
-    //    if (result?.user) {
-    //      console.log('✅ Login completato dopo redirect, user:', result.user.email);
-    // Il resto viene gestito da onAuthStateChanged
-    //               }
-    //         } catch (error) {
-    //           console.error('❌ Errore redirect login:', error);
-    //         alert('Errore durante il login. Riprova.');
-    //   }
-    //};
-    //checkRedirectResult();
-    //}, []);
 
     const [currentUser, setCurrentUser] = useState(storage.getCurrentUser());
     const [activeTab, setActiveTab] = useState('partite');
@@ -69,38 +49,25 @@ function App() {
         // 🔧 Controlla se stiamo tornando da un redirect
         const redirectPending = sessionStorage.getItem('calcetto_redirect_pending');
         const redirectTime = sessionStorage.getItem('calcetto_redirect_time');
-        console.log('🔵 Redirect pending?', redirectPending, 'time:', redirectTime);
-
         if (redirectPending) {
             sessionStorage.removeItem('calcetto_redirect_pending');
             sessionStorage.removeItem('calcetto_redirect_time');
-            console.log('✅ Tornato da redirect, aspetto auth Firebase...');
         }
-
         let unsubscribe;
-
         const initAuth = async () => {
             try {
                 await new Promise(resolve => setTimeout(resolve, 500));
-                console.log('🔵 Controllo redirect result...');
-
                 const redirectResult = await getRedirectResult(auth);
-                console.log('🔵 getRedirectResult:', redirectResult?.user?.email || 'NULL');
-
                 if (redirectResult?.user) {
-                    console.log('✅ Trovato redirect user:', redirectResult.user.email);
                 }
 
                 unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-                    console.log('🔵 onAuthStateChanged, user:', firebaseUser?.email || 'NULL');
                     setLoading(true);
 
                     if (firebaseUser && firebaseUser.email) {
                         try {
-                            console.log('🟢 Firebase user valido:', firebaseUser.email);
 
                             let loadedUsers = await storage.getUsers();
-                            console.log('🟢 Users caricati:', loadedUsers?.length || 0);
 
                             if (!loadedUsers || !Array.isArray(loadedUsers)) {
                                 console.error('❌ storage.getUsers() returned:', loadedUsers);
@@ -114,7 +81,6 @@ function App() {
                             });
 
                             if (recoveredUser) {
-                                console.log('🟢 Account recuperato:', recoveredUser.name);
                                 const userWithAdmin = { ...recoveredUser, isAdmin: email === ADMIN_EMAIL };
                                 setCurrentUser(userWithAdmin);
                                 storage.setCurrentUser(userWithAdmin);
@@ -124,10 +90,8 @@ function App() {
                                 setShowRoleModal(true);
                             } else {
                                 const existingUser = loadedUsers.find(u => u.email === email);
-                                console.log('🟢 Utente trovato?', existingUser?.name || 'NO');
 
                                 if (existingUser) {
-                                    console.log('✅ LOGIN SUCCESS:', existingUser.name);
                                     const userWithAdmin = { ...existingUser, isAdmin: email === ADMIN_EMAIL };
                                     setCurrentUser(userWithAdmin);
                                     storage.setCurrentUser(userWithAdmin);
@@ -135,7 +99,6 @@ function App() {
                                     setVotes(loadedVotes || []);
                                     if (!existingUser.preferredRole) setShowRoleModal(true);
                                 } else {
-                                    console.log('⚠️ Utente NON trovato, modal claim');
                                     setPendingEmail(email);
                                     setShowClaimModal(true);
                                 }
@@ -147,7 +110,6 @@ function App() {
                             setLoading(false);
                         }
                     } else {
-                        console.log('🔴 Nessun utente autenticato');
                         setCurrentUser(null);
                         setLoading(false);
                     }
@@ -161,7 +123,6 @@ function App() {
         initAuth();
 
         return () => {
-            console.log('🔵 Cleanup');
             if (unsubscribe) unsubscribe();
         };
     }, []);
