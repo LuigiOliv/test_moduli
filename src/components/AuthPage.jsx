@@ -10,13 +10,17 @@ export function LoginPage({ onLogin }) {
         setError(null);
         try {
             const user = await storage.handleLogin();
-            // Se user è null (mobile redirect), non facciamo nulla. 
-            // Sarà onAuthStateChanged in App.jsx a gestire il login al ritorno.
             if (user && user.email) {
                 onLogin(user.email);
             }
         } catch (e) {
-            setError("Accesso fallito.");
+            if (e.message === 'POPUP_BLOCKED') {
+                setError("⚠️ Popup bloccato. Attiva 'Modalità Desktop' nelle impostazioni del browser e riprova.");
+            } else if (e.code === 'auth/popup-closed-by-user') {
+                setError("Login annullato.");
+            } else {
+                setError("Accesso fallito. Prova ad attivare 'Modalità Desktop' nel browser.");
+            }
             console.error(e);
         } finally {
             setLoading(false);

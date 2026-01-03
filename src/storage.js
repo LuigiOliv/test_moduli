@@ -70,29 +70,32 @@ const storage = {
         const { GoogleAuthProvider, signInWithPopup, signInWithRedirect, setPersistence, browserLocalPersistence } = await import('firebase/auth');
         const provider = new GoogleAuthProvider();
 
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        console.log('🔵 isMobile:', isMobile);
-
-        if (isMobile) {
-            try {
-                console.log('🔵 Setto persistenza + flag redirect...');
-                await setPersistence(auth, browserLocalPersistence);
-
-                // 🔧 Salva flag NOSTRO che stiamo facendo un redirect
-                sessionStorage.setItem('calcetto_redirect_pending', 'true');
-                sessionStorage.setItem('calcetto_redirect_time', Date.now().toString());
-
-                console.log('🔵 Flag salvato, chiamo redirect...');
-                await signInWithRedirect(auth, provider);
-                return null;
-            } catch (error) {
-                console.error('❌ Errore in handleLogin mobile:', error);
-                throw error;
-            }
-        } else {
-            console.log('🔵 Desktop: uso signInWithPopup');
+        // 🔧 Prova SEMPRE popup prima (molti mobile moderni lo supportano)
+        try {
+            console.log('🔵 Tentativo popup...');
             const result = await signInWithPopup(auth, provider);
+            console.log('✅ Popup success:', result.user.email);
             return result.user;
+        } catch (popupError) {
+            console.log('⚠️ Popup fallito:', popupError.code);
+
+            // Se popup è bloccato/chiuso dall'utente, NON usare redirect
+            if (popupError.code === 'auth/popup-closed-by-user' ||
+                popupError.code === 'auth/cancelled-popup-request') {
+                throw popupError; // L'utente ha cancellato
+            }
+
+            // Per altri errori (popup bloccato), mostra messaggio
+            if (popupError.code === 'auth/popup-blocked') {
+                throw new Error('POPUP_BLOCKED');
+            }
+
+            // Fallback redirect solo se proprio necessario
+            console.log('🔵 Fallback a redirect...');
+            await setPersistence(auth, browserLocalPersistence);
+            sessionStorage.setItem('calcetto_redirect_pending', 'true');
+            await signInWithRedirect(auth, provider);
+            return null;
         }
     },
 
