@@ -27,3 +27,11 @@ setPersistence(auth, browserLocalPersistence)
   .catch((error) => {
     console.error('❌ Errore settaggio persistence:', error);
   });
+
+import { GoogleAuthProvider } from 'firebase/auth';
+
+export const googleProvider = new GoogleAuthProvider();
+// 🔧 Forza il redirect sul tuo dominio custom
+googleProvider.setCustomParameters({
+  redirect_uri: 'https://app.nslab.it/calcetto'
+});
