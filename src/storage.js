@@ -75,7 +75,14 @@ const storage = {
 
         if (isMobile) {
             try {
+                console.log('🔵 Setto persistenza + flag redirect...');
                 await setPersistence(auth, browserLocalPersistence);
+
+                // 🔧 Salva flag NOSTRO che stiamo facendo un redirect
+                sessionStorage.setItem('calcetto_redirect_pending', 'true');
+                sessionStorage.setItem('calcetto_redirect_time', Date.now().toString());
+
+                console.log('🔵 Flag salvato, chiamo redirect...');
                 await signInWithRedirect(auth, provider);
                 return null;
             } catch (error) {

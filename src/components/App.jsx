@@ -64,46 +64,33 @@ function App() {
 
     // 🔧 DEBUG: Verifica storage mobile
     useEffect(() => {
-        console.log('📦 Test localStorage:');
-        try {
-            localStorage.setItem('test_calcetto', 'works');
-            console.log('📦 localStorage.test_calcetto:', localStorage.getItem('test_calcetto'));
-            console.log('📦 Tutte le chiavi localStorage:', Object.keys(localStorage));
-
-            // Controlla se ci sono chiavi Firebase
-            const firebaseKeys = Object.keys(localStorage).filter(k =>
-                k.includes('firebase') || k.includes('calcetto-af1e0')
-            );
-            console.log('📦 Chiavi Firebase trovate:', firebaseKeys);
-            firebaseKeys.forEach(key => {
-                console.log(`📦 ${key}:`, localStorage.getItem(key)?.substring(0, 100));
-            });
-        } catch (e) {
-            console.error('❌ localStorage BLOCCATO:', e);
-        }
-    }, []);
-
-    // 🔧 FIX: Aspetta init completo, poi controlla redirect
-    useEffect(() => {
         console.log('🔵 Inizio gestione auth');
+
+        // 🔧 Controlla se stiamo tornando da un redirect
+        const redirectPending = sessionStorage.getItem('calcetto_redirect_pending');
+        const redirectTime = sessionStorage.getItem('calcetto_redirect_time');
+        console.log('🔵 Redirect pending?', redirectPending, 'time:', redirectTime);
+
+        if (redirectPending) {
+            sessionStorage.removeItem('calcetto_redirect_pending');
+            sessionStorage.removeItem('calcetto_redirect_time');
+            console.log('✅ Tornato da redirect, aspetto auth Firebase...');
+        }
+
         let unsubscribe;
 
-        // Aspetta che Firebase sia completamente inizializzato
         const initAuth = async () => {
             try {
-                // Piccolo delay per garantire che Firebase sia pronto
                 await new Promise(resolve => setTimeout(resolve, 500));
-                console.log('🔵 Firebase pronto, controllo redirect...');
+                console.log('🔵 Controllo redirect result...');
 
                 const redirectResult = await getRedirectResult(auth);
-                console.log('🔵 Redirect result:', redirectResult?.user?.email || 'NULL');
+                console.log('🔵 getRedirectResult:', redirectResult?.user?.email || 'NULL');
 
-                // Se c'è un redirect result, forza il trigger di onAuthStateChanged
                 if (redirectResult?.user) {
                     console.log('✅ Trovato redirect user:', redirectResult.user.email);
                 }
 
-                // Attiva listener DOPO aver controllato redirect
                 unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
                     console.log('🔵 onAuthStateChanged, user:', firebaseUser?.email || 'NULL');
                     setLoading(true);
@@ -173,7 +160,10 @@ function App() {
 
         initAuth();
 
-        return () => unsubscribe?.();
+        return () => {
+            console.log('🔵 Cleanup');
+            if (unsubscribe) unsubscribe();
+        };
     }, []);
 
     const handleLogin = (email) => {
