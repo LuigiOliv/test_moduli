@@ -10,11 +10,15 @@
     flex-direction: row;
     justify-content: space-around;
     align-items: stretch;
-    background: var(--bg-dark);
+    background: var(--bg-deep);
     border-top: 2px solid var(--volt);
     padding: 8px 0;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
 }
+
+
+
 
 .nav-tab {
     flex: 1;
@@ -44,7 +48,7 @@
 .nav-tab.active {
     color: black;
     background: var(--volt);
-    font-weight: 700;
+    font-weight: 500;
 }
 
 /* Spazio per contenuto sopra la bottom bar - applica a .content */
@@ -53,7 +57,7 @@
     min-height: calc(100vh - 60px);
 }
 
-/* Reset effetti indesiderati */
+/* Reset effetti indesiderati 
 .nav-tab,
 .nav-tab:hover,
 .nav-tab.active {
@@ -61,7 +65,7 @@
     text-shadow: none !important;
     filter: none !important;
     -webkit-box-shadow: none !important;
-}
+}*/
 
 /* Tablet: più spazio */
 @media (min-width: 768px) {
@@ -118,17 +122,9 @@
         justify-content: center;
         background: var(--bg-card);
         border: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         /* Gap zero per massimizzare spazio tab */
         padding: 8px 5px;
         flex-wrap: wrap;
         overflow-x: auto;
-        /* Scroll orizzontale se necessario */
-        -webkit-overflow-scrolling: touch;
-        /* Smooth scroll iOS */
     }
-}
-
-.app-container>.content {
-    padding-bottom: 20px !important;
 }
