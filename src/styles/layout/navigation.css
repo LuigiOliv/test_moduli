@@ -51,12 +51,6 @@
     font-weight: 500;
 }
 
-/* Spazio per contenuto sopra la bottom bar - applica a .content */
-.app-container>.content {
-    padding-bottom: 100px !important;
-    min-height: calc(100vh - 60px);
-}
-
 /* Reset effetti indesiderati 
 .nav-tab,
 .nav-tab:hover,
@@ -77,10 +71,6 @@
         font-size: 1rem;
         padding: 10px 16px;
         min-height: 70px;
-    }
-
-    .app-container>.content {
-        padding-bottom: 110px !important;
     }
 }
 

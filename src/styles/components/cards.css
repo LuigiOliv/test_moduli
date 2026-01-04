@@ -35,6 +35,7 @@
     display: flex;
     flex-direction: column;
     gap: 15px;
+    min-width: 80%
 }
 
 /* Bordino laterale */
