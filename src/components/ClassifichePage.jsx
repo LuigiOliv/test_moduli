@@ -61,7 +61,7 @@ function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile })
         }).length;
     }, [votes, currentUserId]);
 
-    const canViewLeaderboard = !hasVoteTargets || userVotesCount >= 5;
+    const canViewLeaderboard = !hasVoteTargets || userVotesCount >= 3;
 
     // Calcola statistiche overall
     const playersWithOverall = users
@@ -188,9 +188,9 @@ function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile })
 
                 <div className="no-votes">
                     <h3>🔒 Classifica Bloccata</h3>
-                    <p>Per visualizzare le classifiche devi completare almeno 5 valutazioni negli ultimi 7 giorni</p>
+                    <p>Per visualizzare le classifiche devi completare almeno 3 valutazioni negli ultimi 7 giorni</p>
                     <p style={{ marginTop: '15px', fontSize: '1.2rem', color: 'var(--volt)' }}>
-                        Hai completato: <strong>{userVotesCount}/5</strong> valutazioni negli ultimi 7 giorni
+                        Hai completato: <strong>{userVotesCount}/3</strong> valutazioni negli ultimi 7 giorni
                     </p>
                     <p style={{ marginTop: '10px', opacity: '0.8' }}>
                         Vai alla sezione "Valuta" per votare altri giocatori!
