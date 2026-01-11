@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import utils from '../utils.js';
-import { getSkillsForPlayer, getShortSkillsForPlayer } from '../constants.js';
+import { getSkillsForPlayer, getShortSkillsForPlayer, CLASSIFICATION_FORMULA } from '../constants.js';
 import RadarChart from './RadarChart.jsx';
 
 /**
@@ -13,12 +13,14 @@ import RadarChart from './RadarChart.jsx';
  * @param {boolean} isOwnProfile - True se è il profilo dell'utente loggato.
  * @param {function} onBack - Callback per tornare indietro (se non è il proprio profilo).
  */
-function PlayerProfile({ player, votes = [], isOwnProfile, onBack }) {
+function PlayerProfile({ player, votes = [], matches = [], matchVotes = [], isOwnProfile, onBack }) {
     const playerVotes = votes.filter(v => v.playerId === player.id);
     const voteCount = utils.countVotes(player.id, votes);
     const hasEnoughVotes = voteCount >= 5;
     const averages = utils.calculateAverages(player.id, votes, player);
-    const overall = utils.calculateOverall(averages);
+    const overall = matches.length > 0
+        ? utils.calculateFormulaBasedOverall(averages, player.id, matches, matchVotes, CLASSIFICATION_FORMULA)
+        : utils.calculateOverall(averages);
     const [flippedCard, setFlippedCard] = useState(null);
     const handleCardClick = (category) => {
         if (window.innerWidth <= 768) {

@@ -47,6 +47,99 @@ const utils = {
         if (!name) return '??';
         return name.substring(0, 2).toUpperCase();
     },
+    // ============================================================================
+    // FORMULA-BASED CLASSIFICATION SYSTEM
+    // ============================================================================
+
+    /**
+     * Recupera lo storico delle partite completate per un giocatore
+     */
+    getPlayerMatchHistory: (playerId, matches) => {
+        if (!matches || matches.length === 0) return [];
+
+        return matches
+            .filter(match => {
+                if (match.status !== 'COMPLETED') return false;
+                const gialliPlayers = match.teams?.gialli || [];
+                const verdiPlayers = match.teams?.verdi || [];
+                return gialliPlayers.includes(playerId) || verdiPlayers.includes(playerId);
+            })
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    },
+
+    /**
+     * Calcola il rendimento recente (media delle ultime N partite)
+     * Ritorna null se il giocatore ha meno di minMatches partite
+     */
+    calculatePerformance: (playerId, matchHistory, matchVotes, recentCount = 5, minMatches = 5) => {
+        if (!matchHistory || matchHistory.length < minMatches) {
+            return null; // Performance = 0 contribution
+        }
+
+        const recentMatches = matchHistory.slice(0, recentCount);
+        const ratings = [];
+
+        recentMatches.forEach(match => {
+            const matchVoteData = matchVotes.find(mv => mv.matchId === match.id);
+            if (!matchVoteData || !matchVoteData.votes) return;
+
+            Object.values(matchVoteData.votes).forEach(voterVotes => {
+                if (voterVotes[playerId]?.rating) {
+                    ratings.push(voterVotes[playerId].rating);
+                }
+            });
+        });
+
+        if (ratings.length === 0) return null;
+        return ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    },
+
+    /**
+     * Calcola la costanza (quante partite giocate delle ultime N)
+     */
+    calculateConsistency: (matchHistory, windowSize = 10) => {
+        if (!matchHistory || matchHistory.length === 0) return 0;
+        const matchesPlayed = Math.min(matchHistory.length, windowSize);
+        return matchesPlayed / windowSize;
+    },
+
+    /**
+     * Calcola l'overall usando la formula ponderata
+     * Formula: new_vote = (current_vote * x) + (performance * y) + (consistency * z)
+     */
+    calculateFormulaBasedOverall: (averages, playerId, matches, matchVotes, formula) => {
+        const currentVote = utils.calculateOverall(averages);
+        if (!currentVote) return null;
+
+        const matchHistory = utils.getPlayerMatchHistory(playerId, matches);
+        const performance = utils.calculatePerformance(
+            playerId,
+            matchHistory,
+            matchVotes,
+            formula.RECENT_MATCHES_FOR_PERFORMANCE,
+            formula.MIN_MATCHES_FOR_PERFORMANCE
+        );
+        const consistency = utils.calculateConsistency(matchHistory, formula.CONSISTENCY_WINDOW);
+
+        // Converti currentVote in scala 1-10
+        const currentVote10 = utils.toBase10(currentVote);
+
+        // Performance contribution (già in scala 1-10, o 0 se null)
+        const performanceContribution = performance !== null
+            ? performance * formula.PERFORMANCE_WEIGHT
+            : 0;
+
+        // Consistency in scala 1-10
+        const consistencyContribution = (consistency * 10) * formula.CONSISTENCY_WEIGHT;
+
+        // Calcola voto finale in scala 1-10
+        const finalVote = (currentVote10 * formula.CURRENT_WEIGHT) +
+            performanceContribution +
+            consistencyContribution;
+
+        // Riconverti in scala 1-4 per compatibilità
+        return (finalVote / 10) * 4;
+    },
 
     // ============================================================================
     // GENERAZIONE ID GIOCATORI

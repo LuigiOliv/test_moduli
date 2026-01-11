@@ -3,8 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import utils from '../utils.js';
-import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER } from '../constants.js';
-
+import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER, CLASSIFICATION_FORMULA } from '../constants.js';
 /**
  * Pagina per visualizzare le classifiche (Rating, Skill, Portieri, etc.).
  * @param {Array<object>} users - Lista di tutti gli utenti.
@@ -23,7 +22,7 @@ const getVoteTimestamp = (vote) => {
     return Number.isNaN(parsed) ? null : parsed;
 };
 
-function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile }) {
+function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = [], currentUser, onViewProfile }) {
     const [view, setView] = useState('main'); // 'main' | 'macro-detail' | 'skill-detail'
     const [selectedMacro, setSelectedMacro] = useState(null);
     const [selectedSkill, setSelectedSkill] = useState(null);
@@ -63,17 +62,24 @@ function ClassifichePage({ users = [], votes = [], currentUser, onViewProfile })
 
     const canViewLeaderboard = !hasVoteTargets || userVotesCount >= 3;
 
-    // Calcola statistiche overall
-    const playersWithOverall = users
-        .filter(u => !u.id.startsWith('seed'))
-        .map(player => {
-            const averages = utils.calculateAverages(player.id, votes, player);
-            const overall = utils.calculateOverall(averages);
-            const voteCount = utils.countVotes(player.id, votes);
-            return { ...player, overall, voteCount, averages };
-        })
-        .filter(p => p.overall !== null && p.voteCount >= 5)
-        .sort((a, b) => b.overall - a.overall);
+    // Calcola statistiche overall con formula
+    const playersWithOverall = useMemo(() => {
+        return users
+            .filter(u => !u.id.startsWith('seed'))
+            .map(player => {
+                const averages = utils.calculateAverages(player.id, votes, player);
+                const voteCount = utils.countVotes(player.id, votes);
+
+                // Usa la formula se abbiamo i dati delle partite
+                const overall = matches.length > 0
+                    ? utils.calculateFormulaBasedOverall(averages, player.id, matches, matchVotes, CLASSIFICATION_FORMULA)
+                    : utils.calculateOverall(averages);
+
+                return { ...player, overall, voteCount, averages };
+            })
+            .filter(p => p.overall !== null && p.voteCount >= 5)
+            .sort((a, b) => b.overall - a.overall);
+    }, [users, votes, matches, matchVotes]);
 
     // Funzione per calcolare classifica per macrocategoria
     const getPlayersForMacro = (macroCategory) => {

@@ -6,7 +6,7 @@ import { auth } from '../firebase.js';
 import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import storage from '../storage.js';
 import utils from '../utils.js';  // ← AGGIUNGI QUESTA RIGA
-import { ADMIN_EMAIL } from '../constants.js';
+import { ADMIN_EMAIL, CLASSIFICATION_FORMULA } from '../constants.js';
 import Header from './Navigation/Header.jsx';
 import { LoginPage } from './AuthPage.jsx';
 import { ClaimProfileModal, RoleSelectionModal, RoleEditModal, ProfileSelectorModal } from './Modals.jsx';
@@ -35,6 +35,8 @@ function App() {
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [users, setUsers] = useState([]);
     const [votes, setVotes] = useState([]);
+    const [matches, setMatches] = useState([]);
+    const [matchVotes, setMatchVotes] = useState([]);
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [showClaimModal, setShowClaimModal] = useState(false);
     const [pendingEmail, setPendingEmail] = useState(getPendingEmail());
@@ -77,6 +79,15 @@ function App() {
                                 storage.setCurrentUser(userWithAdmin);
                                 const loadedVotes = await storage.getVotes();
                                 setVotes(loadedVotes || []);
+                                // ⬇️ ADD THESE LINES
+                                const loadedMatches = await storage.getMatches();
+                                setMatches(loadedMatches || []);
+                                const allMatchVotes = [];
+                                for (const match of loadedMatches || []) {
+                                    const mvs = await storage.getMatchVotes(match.id);
+                                    mvs.forEach(mv => allMatchVotes.push({ ...mv, matchId: match.id }));
+                                }
+                                setMatchVotes(allMatchVotes);
                                 setUsers(await storage.getUsers());
                                 setShowRoleModal(true);
                             } else {
@@ -484,6 +495,8 @@ function App() {
                         <PlayerProfile
                             player={users.find(u => u.id === viewingProfile)}
                             votes={votes}
+                            matches={matches}
+                            matchVotes={matchVotes}
                             isOwnProfile={viewingProfile === currentUser.id}
                         />
                     ) : null
@@ -520,12 +533,16 @@ function App() {
                     <PlayerProfile
                         player={currentUser}
                         votes={votes}
+                        matches={matches}
+                        matchVotes={matchVotes}
                         isOwnProfile={true}
                     />
                 ) : activeTab === 'classifiche' ? (
                     <ClassifichePage
                         users={users}
                         votes={votes}
+                        matches={matches}
+                        matchVotes={matchVotes}
                         currentUser={currentUser}
                         onViewProfile={setViewingProfile}
                     />

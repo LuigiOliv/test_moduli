@@ -66,3 +66,16 @@ export const getSkillsForPlayer = (player) => {
 export const getShortSkillsForPlayer = (player) => {
     return player.isGoalkeeper ? shortSKILLS_GK : shortSKILLS;
 };
+
+// =========================================================================
+// CLASSIFICATION FORMULA CONFIGURATION
+// =========================================================================
+
+export const CLASSIFICATION_FORMULA = {
+    CURRENT_WEIGHT: 0.8,              // Peso voto attuale (80%)
+    PERFORMANCE_WEIGHT: 0.15,         // Peso rendimento recente (15%)
+    CONSISTENCY_WEIGHT: 0.05,         // Peso costanza (5%)
+    RECENT_MATCHES_FOR_PERFORMANCE: 5, // Numero partite per calcolare rendimento
+    CONSISTENCY_WINDOW: 10,            // Numero partite per calcolare costanza
+    MIN_MATCHES_FOR_PERFORMANCE: 5     // Minimo partite per contributo performance
+};
