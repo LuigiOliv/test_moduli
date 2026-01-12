@@ -172,6 +172,13 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
 
     // Calcola rendimento degli ultimi 5 match per ogni giocatore
     const playersWithPerformance = useMemo(() => {
+        console.log('🔍 Rendimento Debug:', {
+            matchesLength: matches?.length,
+            matchVotesLength: matchVotes?.length,
+            usersLength: users?.length,
+            matches: matches,
+            matchVotes: matchVotes
+        });
         return users
             .filter(u => !u.id.startsWith('seed'))
             .map(player => {
