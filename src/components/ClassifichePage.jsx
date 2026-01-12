@@ -176,13 +176,31 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
             .filter(u => !u.id.startsWith('seed'))
             .map(player => {
                 const matchHistory = utils.getPlayerMatchHistory(player.id, matches);
-                const performance = utils.calculatePerformance(
-                    player.id,
-                    matchHistory,
-                    matchVotes,
-                    CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE,
-                    CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE
-                );
+
+                // Check if player has enough matches
+                if (!matchHistory || matchHistory.length < CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE) {
+                    return { ...player, performance: null, matchCount: matchHistory?.length || 0 };
+                }
+
+                const recentMatches = matchHistory.slice(0, CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE);
+                const ratings = [];
+
+                // Collect all ratings for this player from recent matches
+                recentMatches.forEach(match => {
+                    // Find all votes for this specific match
+                    const matchVotesList = matchVotes.filter(mv => mv.matchId === match.id);
+
+                    matchVotesList.forEach(voterData => {
+                        // voterData.votes is an object like { playerId: rating, ... }
+                        if (voterData.votes && voterData.votes[player.id] !== undefined) {
+                            ratings.push(voterData.votes[player.id]);
+                        }
+                    });
+                });
+
+                const performance = ratings.length > 0
+                    ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+                    : null;
 
                 const averages = utils.calculateAverages(player.id, votes, player);
                 const overall = matches.length > 0
