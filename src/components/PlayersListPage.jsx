@@ -4,6 +4,8 @@
 // NEW:
 import { useMemo } from 'react';
 import utils from '../utils.js';
+import { MATCH } from '../constants.js';
+
 
 function PlayersListPage({ users = [], currentUser, votes = [], matches = [], onSelectPlayer }) {
 
@@ -18,7 +20,7 @@ function PlayersListPage({ users = [], currentUser, votes = [], matches = [], on
 
                 // NEW: Check minimum matches requirement
                 const matchCount = utils.countPlayerMatches(u.id, matches);
-                if (matchCount < 3) return false;
+                if (matchCount < MATCH.MIN_MATCHES_FOR_VOTING) return false;
 
                 // Filter out initial players if user has voted offline
                 if (currentUser.hasVotedOffline && u.isInitialPlayer) return false;

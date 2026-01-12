@@ -16,6 +16,7 @@ import {
     limit,
     writeBatch
 } from 'firebase/firestore';
+import { MATCH, DEADLINES } from './constants.js';
 
 const storage = {
     getUsers: async () => {
@@ -98,7 +99,7 @@ const storage = {
         const q = query(
             collection(db, 'matches'),
             orderBy('date', 'desc'),
-            limit(20)
+            limit(MATCH.MATCHES_QUERY_LIMIT)
         );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -243,7 +244,7 @@ const storage = {
 
         // OPEN → CLOSED: 50 minuti prima della partita
         if (match.status === 'OPEN') {
-            const closingTime = new Date(matchDate.getTime() - 50 * 60 * 1000);
+            const closingTime = new Date(matchDate.getTime() - DEADLINES.REG_DEADLINE_FORCED_MINUTES * 60 * 1000);
             if (now >= closingTime) {
                 newStatus = 'CLOSED';
                 needsUpdate = true;
@@ -252,7 +253,7 @@ const storage = {
 
         // CLOSED → VOTING: 2 ore dopo la partita (solo se ci sono squadre E risultato)
         if (match.status === 'CLOSED') {
-            const votingOpenTime = new Date(matchDate.getTime() + 2 * 60 * 60 * 1000);
+            const votingOpenTime = new Date(matchDate.getTime() + DEADLINES.VOTING_OPENS_AFTER_HOURS * 60 * 60 * 1000);
             const hasTeams = match.teams &&
                 match.teams.gialli &&
                 match.teams.gialli.length > 0 &&

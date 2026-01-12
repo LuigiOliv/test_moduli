@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import utils from '../utils.js';
-import { getSkillsForPlayer } from '../constants.js';
+import { getSkillsForPlayer, RATING } from '../constants.js';
 
 function RatingForm({ player, onSubmit, onCancel }) {
     const [ratings, setRatings] = useState({});
@@ -29,7 +29,7 @@ function RatingForm({ player, onSubmit, onCancel }) {
                     {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
                 </div>
                 <h2>Valuta {player.name} {player.isGoalkeeper && '🧤'}</h2>
-                <p>Scala: 1=Scarso | 2=Sufficiente | 3=Buono | 4=Ottimo</p>
+                <p>Scala: {RATING.RATING_MIN}=Il peggiore | {RATING.RATING_MAX}=Il migliore</p>
             </div>
             {Object.entries(playerSkills).map(([category, skills]) => (
                 <div key={category} className="category-section">
@@ -40,14 +40,13 @@ function RatingForm({ player, onSubmit, onCancel }) {
                         <div key={skill} className="skill-item">
                             <div className="skill-name">{skill}</div>
                             <div className="rating-buttons">
-                                {[1, 2, 3, 4].map(value => (
-                                    <button
-                                        key={value}
-                                        className={`rating-btn ${ratings[skill] === value ? 'selected' : ''}`}
-                                        onClick={() => setRatings(prev => ({ ...prev, [skill]: value }))}
-                                    >
-                                        {value}
-                                    </button>
+                                {Array.from({ length: RATING.RATING_MAX - RATING.RATING_MIN + 1 }, (_, i) => i + RATING.RATING_MIN).map(value => (<button
+                                    key={value}
+                                    className={`rating-btn ${ratings[skill] === value ? 'selected' : ''}`}
+                                    onClick={() => setRatings(prev => ({ ...prev, [skill]: value }))}
+                                >
+                                    {value}
+                                </button>
                                 ))}
                             </div>
                         </div>

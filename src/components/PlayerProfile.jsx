@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import utils from '../utils.js';
-import { getSkillsForPlayer, getShortSkillsForPlayer, CLASSIFICATION_FORMULA } from '../constants.js';
+import { getSkillsForPlayer, getShortSkillsForPlayer, CLASSIFICATION_FORMULA, VOTING, UI } from '../constants.js';
 import RadarChart from './RadarChart.jsx';
 
 /**
@@ -16,14 +16,14 @@ import RadarChart from './RadarChart.jsx';
 function PlayerProfile({ player, votes = [], matches = [], matchVotes = [], isOwnProfile, onBack }) {
     const playerVotes = votes.filter(v => v.playerId === player.id);
     const voteCount = utils.countVotes(player.id, votes);
-    const hasEnoughVotes = voteCount >= 5;
+    const hasEnoughVotes = voteCount >= VOTING.MIN_VOTES_FOR_DISPLAY;
     const averages = utils.calculateAverages(player.id, votes, player);
     const overall = matches.length > 0
         ? utils.calculateFormulaBasedOverall(averages, player.id, matches, matchVotes, CLASSIFICATION_FORMULA)
         : utils.calculateOverall(averages);
     const [flippedCard, setFlippedCard] = useState(null);
     const handleCardClick = (category) => {
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= UI.MOBILE_BREAKPOINT_PX) {
             setFlippedCard(flippedCard === category ? null : category);
         }
     };
@@ -136,8 +136,7 @@ function PlayerProfile({ player, votes = [], matches = [], matchVotes = [], isOw
                 <div className="no-votes">
                     <h3>📊 Grafici non disponibili</h3>
                     <p>{isOwnProfile ? "Chiedi ai tuoi compagni di valutarti!" : "Questo giocatore ha bisogno di più valutazioni"}</p>
-                    <p>Servono almeno 5 valutazioni (attualmente: {voteCount})</p>
-                </div>
+                    <p>Servono almeno {VOTING.MIN_VOTES_FOR_DISPLAY} valutazioni (attualmente: {voteCount})</p>                </div>
             )}
         </div>
     );

@@ -2,6 +2,7 @@
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
 import utils from './utils.js';
+import { VOTING, RATING } from './constants.js';
 import { ROLES, SKILLS, getSkillsForPlayer } from './constants.js'; // Importa le costanti
 
 /**
@@ -20,14 +21,14 @@ const STATS_ENGINE = (function () {
     const calculateRating = (playerVotes) => {
         if (!playerVotes || playerVotes.length === 0) {
             // Rating di base se non ci sono voti
-            return 70.0;
+            return RATING.DEFAULT_BASE_RATING;
         }
 
         // Il Rating è calcolato principalmente sulla media dei voti Match (generali)
         const matchVotes = playerVotes.map(v => v.matchVote).filter(v => v !== undefined);
 
         if (matchVotes.length === 0) {
-            return 70.0;
+            return RATING.DEFAULT_BASE_RATING;
         }
 
         const sumMatchVotes = matchVotes.reduce((sum, vote) => sum + vote, 0);
@@ -46,15 +47,15 @@ const STATS_ENGINE = (function () {
             .filter(v => v !== undefined && v !== null);
 
         const avgSkillVote = allSkillVotes.length > 0 ?
-            allSkillVotes.reduce((sum, vote) => sum + vote, 0) / allSkillVotes.length : 6.0;
+            allSkillVotes.reduce((sum, vote) => sum + vote, 0) / allSkillVotes.length : RATING.DEFAULT_SKILL_VALUE;
 
         // Piccola correzione basata sulle skill: (AvgSkill - 6.0) * 2
-        const skillCorrection = (avgSkillVote - 6.0) * 2;
+        const skillCorrection = (avgSkillVote - RATING.DEFAULT_SKILL_VALUE) * 2;
 
         let finalRating = baseRating + skillCorrection;
 
         // Limita il rating tra 50 e 100
-        finalRating = Math.max(50.0, Math.min(100.0, finalRating));
+        finalRating = Math.max(RATING.MIN_RATING, Math.min(RATING.MAX_RATING, finalRating));
 
         return utils.round(finalRating, 2);
     };

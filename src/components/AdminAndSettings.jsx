@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import storage from '../storage.js';
 import utils from '../utils.js';
 import { ROLES, SKILLS, getSkillsForPlayer } from '../constants.js';
+import { MATCH, DEADLINES, TEAM_BALANCE, VOTING, UI } from '../constants.js';
+
 import { db } from '../firebase.js';
 import { collection, doc, getDocs, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { RoleEditModal } from './Modals.jsx';
@@ -27,7 +29,7 @@ function SettingsPage({ user, onUpdateUser, onDeleteAccount }) {
                 const updatedUser = { ...user, avatar: reader.result };
                 await onUpdateUser(updatedUser);
                 setShowSuccess(true);
-                setTimeout(() => setShowSuccess(false), 3000);
+                setTimeout(() => setShowSuccess(false), UI.SUCCESS_MESSAGE_DURATION_MS);
             };
             reader.readAsDataURL(file);
         }
@@ -43,7 +45,7 @@ function SettingsPage({ user, onUpdateUser, onDeleteAccount }) {
         await onUpdateUser(updatedUser);
         setEditingName(false);
         setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
+        setTimeout(() => setShowSuccess(false), UI.SUCCESS_MESSAGE_DURATION_MS);
     };
 
     const handleNameCancel = () => {
@@ -165,7 +167,7 @@ function SettingsPage({ user, onUpdateUser, onDeleteAccount }) {
                             await onUpdateUser(updatedUser);
                             setShowRoleEdit(false);
                             setShowSuccess(true);
-                            setTimeout(() => setShowSuccess(false), 3000);
+                            setTimeout(() => setShowSuccess(false), UI.SUCCESS_MESSAGE_DURATION_MS);
                         }}
                     />
                 )
@@ -190,9 +192,9 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
     // === STATI PER GESTIONE PARTITE ===
     const [showCreateMatch, setShowCreateMatch] = useState(false);
     const [newMatchDate, setNewMatchDate] = useState('');
-    const [newMatchTime, setNewMatchTime] = useState('21:20');
-    const [newMatchLocation, setNewMatchLocation] = useState('Campo SuperSantos, Portici');
-    const [newMatchMaxPlayers, setNewMatchMaxPlayers] = useState(18);
+    const [newMatchTime, setNewMatchTime] = useState(MATCH.DEFAULT_TIME);
+    const [newMatchLocation, setNewMatchLocation] = useState(MATCH.DEFAULT_LOCATION);
+    const [newMatchMaxPlayers, setNewMatchMaxPlayers] = useState(MATCH.DEFAULT_MAX_PLAYERS);
     const [adminMatches, setAdminMatches] = useState([]);
     const [adminRegistrations, setAdminRegistrations] = useState({});
     const [activeTab, setActiveTab] = useState('matches'); // Tab di default: Partite
@@ -272,17 +274,17 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
 
             // Deadline display: 3 giorni prima alle 18:00
             const regDeadlineDisplay = new Date(matchDateTime);
-            regDeadlineDisplay.setDate(regDeadlineDisplay.getDate() - 3);
-            regDeadlineDisplay.setHours(18, 0, 0, 0);
+            regDeadlineDisplay.setDate(regDeadlineDisplay.getDate() - DEADLINES.REG_DEADLINE_DISPLAY_DAYS);
+            regDeadlineDisplay.setHours(DEADLINES.REG_DEADLINE_DISPLAY_HOUR, 0, 0, 0);
 
             // Deadline forzata: 50 minuti prima della partita
             const regDeadlineForced = new Date(matchDateTime);
-            regDeadlineForced.setMinutes(regDeadlineForced.getMinutes() - 50);
+            regDeadlineForced.setMinutes(regDeadlineForced.getMinutes() - DEADLINES.REG_DEADLINE_FORCED_MINUTES);
 
             // Deadline voti: 3 giorni dopo a mezzanotte
             const votingDeadline = new Date(matchDateTime);
-            votingDeadline.setDate(votingDeadline.getDate() + 3);
-            votingDeadline.setHours(23, 59, 59, 999);
+            votingDeadline.setDate(votingDeadline.getDate() + DEADLINES.VOTING_DEADLINE_DAYS);
+            votingDeadline.setHours(DEADLINES.VOTING_DEADLINE_HOUR, DEADLINES.VOTING_DEADLINE_MINUTE, DEADLINES.VOTING_DEADLINE_SECOND, 999);
 
             await storage.createMatch({
                 date: matchDateTime.toISOString(),
@@ -295,9 +297,9 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
 
             // Reset form
             setNewMatchDate('');
-            setNewMatchTime('21:20');
-            setNewMatchLocation('Campo SuperSantos, Portici');
-            setNewMatchMaxPlayers(18);
+            setNewMatchTime(MATCH.DEFAULT_TIME);
+            setNewMatchLocation(MATCH.DEFAULT_LOCATION);
+            setNewMatchMaxPlayers(MATCH.DEFAULT_MAX_PLAYERS);
             setShowCreateMatch(false);
 
             showSuccessMsg('Partita creata!');
@@ -411,7 +413,7 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                 cancelledAt: Date.now(),
                 cancelledBy: currentUser.id,
                 manualOverride: true,
-                manualOverrideUntil: Date.now() + (365 * 24 * 60 * 60 * 1000) // 1 anno
+                manualOverrideUntil: Date.now() + DEADLINES.CANCELLED_OVERRIDE_DURATION_MS // 1 anno
             });
 
             await loadAdminMatches();
@@ -454,8 +456,8 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
     const handleSaveMaxPlayers = async (matchId) => {
         const maxPlayers = parseInt(newMaxPlayers);
 
-        if (isNaN(maxPlayers) || maxPlayers < 10 || maxPlayers > 20 || maxPlayers % 2 !== 0) {
-            alert('Il numero deve essere pari e compreso tra 10 e 20 (10, 12, 14, 16, 18, 20)');
+        if (isNaN(maxPlayers) || maxPlayers < MATCH.MIN_MATCH_PLAYERS || maxPlayers > MATCH.MAX_MATCH_PLAYERS || maxPlayers % 2 !== 0) {
+            alert(`Il numero deve essere pari e compreso tra ${MATCH.MIN_MATCH_PLAYERS} e ${MATCH.MAX_MATCH_PLAYERS} (${MATCH.MAX_PLAYERS_OPTIONS.join(', ')})`);
             return;
         }
 
@@ -817,7 +819,7 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
     const showSuccessMsg = (msg) => {
         setSuccessMessage(msg);
         setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
+        setTimeout(() => setShowSuccess(false), UI.SUCCESS_MESSAGE_DURATION_MS);
     };
 
     const handleEditName = (player) => {
@@ -860,7 +862,7 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
     };
 
     const handleSaveVotes = async () => {
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < VOTING.SEED_VOTES_COUNT; i++) {
             const seedVote = {
                 voterId: `seed_admin_${i}_${Date.now()}`,
                 playerId: editingVotes.id,
@@ -876,7 +878,7 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
         setEditingVotes(null);
         setVoteValues({});
         showSuccessMsg('Valutazioni aggiornate!');
-        setTimeout(() => window.location.reload(), 1000);
+        setTimeout(() => window.location.reload(), UI.RELOAD_DELAY_MS);
     };
 
     const handleAddPlayer = async () => {
@@ -972,13 +974,11 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                                         type="text"
                                         value={newMatchLocation}
                                         onChange={(e) => setNewMatchLocation(e.target.value)}
-                                        placeholder="Es: Campo SuperSantos, Portici"
-                                    />
+                                        placeholder={`Es: ${MATCH.DEFAULT_LOCATION}`} />
                                 </div>
 
                                 <div className="form-group">
-                                    <label>Max Giocatori (numero pari: 10, 12, 14, 16, 18, 20)</label>
-                                    <select
+                                    <label>Max Giocatori (numero pari: {MATCH.MAX_PLAYERS_OPTIONS.join(', ')})</label>                                    <select
                                         value={newMatchMaxPlayers}
                                         onChange={(e) => setNewMatchMaxPlayers(e.target.value)}
                                     >
@@ -1284,7 +1284,7 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                                             if (data.users) await storage.setUsers(data.users);
                                             if (data.votes) await storage.setVotes(data.votes);
                                             showSuccessMsg('Backup importato!');
-                                            setTimeout(() => window.location.reload(), 1000);
+                                            setTimeout(() => window.location.reload(), UI.RELOAD_DELAY_MS);
                                         } catch (err) {
                                             alert('Errore durante l\'importazione: ' + err.message);
                                         }
@@ -1385,7 +1385,7 @@ function AdminPage({ users, setUsers, votes, setVotes }) {
                                         type="text"
                                         value={editLocation}
                                         onChange={(e) => setEditLocation(e.target.value)}
-                                        placeholder="Es: Campo SuperSantos, Portici"
+                                        placeholder={`Es: ${MATCH.DEFAULT_LOCATION}`}
                                         style={{
                                             width: '100%',
                                             padding: '10px',

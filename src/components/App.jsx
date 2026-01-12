@@ -6,7 +6,7 @@ import { auth } from '../firebase.js';
 import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import storage from '../storage.js';
 import utils from '../utils.js';  // ← AGGIUNGI QUESTA RIGA
-import { ADMIN_EMAIL, CLASSIFICATION_FORMULA } from '../constants.js';
+import { ADMIN_EMAIL, CLASSIFICATION_FORMULA, PROFILE, UI } from '../constants.js';
 import Header from './Navigation/Header.jsx';
 import { LoginPage } from './AuthPage.jsx';
 import { ClaimProfileModal, RoleSelectionModal, RoleEditModal, ProfileSelectorModal } from './Modals.jsx';
@@ -61,7 +61,7 @@ function App() {
         let unsubscribe;
         const initAuth = async () => {
             try {
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, UI.AUTH_INIT_DELAY_MS));
                 const redirectResult = await getRedirectResult(auth);
                 if (redirectResult?.user) {
                 }
@@ -377,7 +377,7 @@ function App() {
     if (currentUser && currentUser.preferredRole) {
         const isGoalkeeper = currentUser.preferredRole === 'Portiere';
         const hasIncompleteProfile = !isGoalkeeper &&
-            (!currentUser.otherRoles || currentUser.otherRoles.length < 2);
+            (!currentUser.otherRoles || currentUser.otherRoles.length < PROFILE.MIN_OTHER_ROLES_REQUIRED);
 
         if (hasIncompleteProfile) {
             return (
@@ -415,13 +415,13 @@ function App() {
                                     <li style={{ marginBottom: '8px' }}>
                                         {currentUser.otherRoles && currentUser.otherRoles.length > 0 ? '⚠️' : '❌'} Altri ruoli:
                                         <strong style={{ color: currentUser.otherRoles && currentUser.otherRoles.length > 0 ? '#f59e0b' : 'var(--hot-red)' }}>
-                                            {' '}{currentUser.otherRoles ? currentUser.otherRoles.length : 0}/2
+                                            {' '}{currentUser.otherRoles ? currentUser.otherRoles.length : 0}/${PROFILE.MIN_OTHER_ROLES_REQUIRED} selezionati
                                         </strong>
                                     </li>
                                 </ul>
                             </div>
                             <p style={{ fontSize: '14px', opacity: '0.8', marginBottom: '20px' }}>
-                                Per continuare, devi selezionare almeno <strong>2 ruoli alternativi</strong> oltre al tuo ruolo preferito.
+                                Per continuare, devi selezionare almeno <strong>{PROFILE.MIN_OTHER_ROLES_REQUIRED} ruoli alternativi</strong> oltre al tuo ruolo preferito.
                             </p>
                             <button
                                 className="btn btn-primary full-width"

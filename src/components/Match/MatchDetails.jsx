@@ -1,11 +1,10 @@
 // src/components/Match/MatchDetails.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import storage from '../../storage.js';
 import utils from '../../utils.js';
-
-const DEFAULT_VOTE_VALUE = 6;
+import { VOTING, RATING } from '../../constants.js';
 
 // ============================================================================
 // VISTA RISULTATI PARTITA COMPLETED  
@@ -206,7 +205,7 @@ export function MatchResultsView({ match, users, onBack }) {
                                                 </span>
                                                 <span style={{
                                                     fontWeight: 'bold',
-                                                    color: avg && avg >= 7 ? '#48bb78' : avg && avg >= 6 ? '#f59e0b' : '#f56565'
+                                                    color: avg && avg >= RATING.EXCELLENT_THRESHOLD ? '#48bb78' : avg && avg >= RATING.GOOD_THRESHOLD ? '#f59e0b' : '#f56565'
                                                 }}>
                                                     {avg ? avg.toFixed(2) : '-'}
                                                 </span>
@@ -249,7 +248,7 @@ export function MatchResultsView({ match, users, onBack }) {
                                                 </span>
                                                 <span style={{
                                                     fontWeight: 'bold',
-                                                    color: avg && avg >= 7 ? '#48bb78' : avg && avg >= 6 ? '#f59e0b' : '#f56565'
+                                                    color: avg && avg >= RATING.EXCELLENT_THRESHOLD ? '#48bb78' : avg && avg >= RATING.GOOD_THRESHOLD ? '#f59e0b' : '#f56565'
                                                 }}>
                                                     {avg ? avg.toFixed(2) : '-'}
                                                 </span>
@@ -301,7 +300,7 @@ export function MatchVotingView({ match, currentUser, users, onBack }) {
 
                 const initialVotes = {};
                 playersToVote.forEach(player => {
-                    initialVotes[player.playerId] = DEFAULT_VOTE_VALUE;
+                    initialVotes[player.playerId] = VOTING.DEFAULT_VOTE;
                 });
                 setVotes(initialVotes);
             }
@@ -443,15 +442,15 @@ export function MatchVotingView({ match, currentUser, users, onBack }) {
                                         </div>
                                         <input
                                             type="range"
-                                            min="1"
-                                            max="10"
-                                            step="0.5"
-                                            value={votes[player.playerId] || DEFAULT_VOTE_VALUE}
+                                            min={VOTING.VOTE_MIN}
+                                            max={VOTING.VOTE_MAX}
+                                            step={VOTING.VOTE_STEP}
+                                            value={votes[player.playerId] || VOTING.DEFAULT_VOTE}
                                             onChange={(e) => handleVoteChange(player.playerId, e.target.value)}
                                             className="vote-slider"
                                         />
                                         <div className="vote-value">
-                                            {votes[player.playerId] ? votes[player.playerId].toFixed(1) : DEFAULT_VOTE_VALUE.toFixed(1)}
+                                            {votes[player.playerId] ? votes[player.playerId].toFixed(1) : VOTING.DEFAULT_VOTE.toFixed(1)}
                                         </div>
                                     </div>
                                 ))}
@@ -468,15 +467,15 @@ export function MatchVotingView({ match, currentUser, users, onBack }) {
                                         </div>
                                         <input
                                             type="range"
-                                            min="1"
-                                            max="10"
-                                            step="0.5"
-                                            value={votes[player.playerId] || DEFAULT_VOTE_VALUE}
+                                            min={VOTING.VOTE_MIN}
+                                            max={VOTING.VOTE_MAX}
+                                            step={VOTING.VOTE_STEP}
+                                            value={votes[player.playerId] || VOTING.DEFAULT_VOTE}
                                             onChange={(e) => handleVoteChange(player.playerId, e.target.value)}
                                             className="vote-slider"
                                         />
                                         <div className="vote-value">
-                                            {votes[player.playerId] ? votes[player.playerId].toFixed(1) : DEFAULT_VOTE_VALUE.toFixed(1)}
+                                            {votes[player.playerId] ? votes[player.playerId].toFixed(1) : VOTING.DEFAULT_VOTE.toFixed(1)}
                                         </div>
                                     </div>
                                 ))}

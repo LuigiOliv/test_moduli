@@ -4,6 +4,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import utils from '../utils.js';
 import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER, CLASSIFICATION_FORMULA } from '../constants.js';
+import { VOTING, DISPLAY, DEADLINES } from '../constants.js';
+
 /**
  * Pagina per visualizzare le classifiche (Rating, Skill, Portieri, etc.).
  * @param {Array<object>} users - Lista di tutti gli utenti.
@@ -64,7 +66,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
         }).length;
     }, [votes, currentUserId]);
 
-    const canViewLeaderboard = !hasVoteTargets || userVotesCount >= 3;
+    const canViewLeaderboard = !hasVoteTargets || userVotesCount >= VOTING.MIN_VOTES_RECENT_FOR_LEADERBOARD;
 
     // Calcola statistiche overall con formula
     const playersWithOverall = useMemo(() => {
@@ -81,7 +83,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
 
                 return { ...player, overall, voteCount, averages };
             })
-            .filter(p => p.overall !== null && p.voteCount >= 5)
+            .filter(p => p.overall !== null && p.voteCount >= VOTING.MIN_VOTES_FOR_DISPLAY)
             .sort((a, b) => b.overall - a.overall);
     }, [users, votes, matches, matchVotes]);
 
@@ -132,7 +134,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
 
                 return { ...player, score: categoryAvg, voteCount };
             })
-            .filter(p => p.score !== null && p.voteCount >= 5)
+            .filter(p => p.score !== null && p.voteCount >= VOTING.MIN_VOTES_FOR_DISPLAY)
             .sort((a, b) => b.score - a.score);
     };
 
@@ -147,7 +149,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
 
                 return { ...player, score, voteCount };
             })
-            .filter(p => p.score !== undefined && p.voteCount >= 5)
+            .filter(p => p.score !== undefined && p.voteCount >= VOTING.MIN_VOTES_FOR_DISPLAY)
             .sort((a, b) => b.score - a.score);
     };
 
@@ -217,9 +219,9 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
 
                 <div className="no-votes">
                     <h3>🔒 Classifica Bloccata</h3>
-                    <p>Per visualizzare le classifiche devi completare almeno 3 valutazioni negli ultimi 7 giorni</p>
+                    <p>Per visualizzare le classifiche devi completare almeno {VOTING.MIN_VOTES_RECENT_FOR_LEADERBOARD} valutazioni negli ultimi {DEADLINES.VOTING_DEADLINE_DAYS} giorni</p>
                     <p style={{ marginTop: '15px', fontSize: '1.2rem', color: 'var(--volt)' }}>
-                        Hai completato: <strong>{userVotesCount}/3</strong> valutazioni negli ultimi 7 giorni
+                        Hai completato: <strong>{userVotesCount}/{VOTING.MIN_VOTES_RECENT_FOR_LEADERBOARD}</strong> valutazioni negli ultimi {DEADLINES.VOTING_DEADLINE_DAYS} giorni
                     </p>
                     <p style={{ marginTop: '10px', opacity: '0.8' }}>
                         Vai alla sezione "Valuta" per votare altri giocatori!
@@ -238,8 +240,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                 </div>
                 <div className="no-votes">
                     <h3>Nessuna classifica disponibile</h3>
-                    <p>I giocatori devono ricevere almeno 5 valutazioni per apparire</p>
-                </div>
+                    <p>I giocatori devono ricevere almeno {VOTING.MIN_VOTES_FOR_DISPLAY} valutazioni per apparire</p>                </div>
             </div>
         );
     }
@@ -269,7 +270,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                             onClick={() => onViewProfile(player.id)}
                         >
                             <div className="rank-number">
-                                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                {index === DISPLAY.GOLD_POSITION ? '🥇' : index === DISPLAY.SILVER_POSITION ? '🥈' : index === DISPLAY.BRONZE_POSITION ? '🥉' : `${index + 1}.`}
                             </div>
                             <div className="avatar">
                                 {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
@@ -312,7 +313,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                             onClick={() => onViewProfile(player.id)}
                         >
                             <div className="rank-number">
-                                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                {index === DISPLAY.GOLD_POSITION ? '🥇' : index === DISPLAY.SILVER_POSITION ? '🥈' : index === DISPLAY.BRONZE_POSITION ? '🥉' : `${index + 1}.`}
                             </div>
                             <div className="avatar">
                                 {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
@@ -365,7 +366,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                                     onClick={() => onViewProfile(player.id)}
                                 >
                                     <div className="rank-number">
-                                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                        {index === DISPLAY.GOLD_POSITION ? '🥇' : index === DISPLAY.SILVER_POSITION ? '🥈' : index === DISPLAY.BRONZE_POSITION ? '🥉' : `${index + 1}.`}
                                     </div>
                                     <div className="avatar">
                                         {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
@@ -399,7 +400,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                             <div className="rankings-compact-list">
                                 {getPlayersForMacro('tecniche').slice(0, showMoreMacros.tecniche ? undefined : 10).map((player, index) => (
                                     <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
-                                        <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
+                                        <div className="rank-number">{index === DISPLAY.GOLD_POSITION ? '🥇' : index === DISPLAY.SILVER_POSITION ? '🥈' : index === DISPLAY.BRONZE_POSITION ? '🥉' : `${index + 1}.`}</div>
                                         <div className="avatar-small">
                                             {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
                                         </div>
@@ -434,7 +435,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                             <div className="rankings-compact-list">
                                 {getPlayersForMacro('tattiche').slice(0, showMoreMacros.tattiche ? undefined : 10).map((player, index) => (
                                     <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
-                                        <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
+                                        <div className="rank-number">{index === DISPLAY.GOLD_POSITION ? '🥇' : index === DISPLAY.SILVER_POSITION ? '🥈' : index === DISPLAY.BRONZE_POSITION ? '🥉' : `${index + 1}.`}</div>
                                         <div className="avatar-small">
                                             {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
                                         </div>
@@ -469,7 +470,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                             <div className="rankings-compact-list">
                                 {getPlayersForMacro('fisiche').slice(0, showMoreMacros.fisiche ? undefined : 10).map((player, index) => (
                                     <div key={player.id} className="rankings-compact-item" onClick={(e) => { e.stopPropagation(); onViewProfile(player.id); }}>
-                                        <div className="rank-number">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
+                                        <div className="rank-number">{index === DISPLAY.GOLD_POSITION ? '🥇' : index === DISPLAY.SILVER_POSITION ? '🥈' : index === DISPLAY.BRONZE_POSITION ? '🥉' : `${index + 1}.`}</div>
                                         <div className="avatar-small">
                                             {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
                                         </div>
@@ -557,7 +558,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                                         onClick={() => onViewProfile(player.id)}
                                     >
                                         <div className="rank-number">
-                                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                            {index === DISPLAY.GOLD_POSITION ? '🥇' : index === DISPLAY.SILVER_POSITION ? '🥈' : index === DISPLAY.BRONZE_POSITION ? '🥉' : `${index + 1}.`}
                                         </div>
                                         <div className="avatar">
                                             {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}

@@ -2,6 +2,8 @@
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
 import { SKILLS, SKILLS_GOALKEEPER, getSkillsForPlayer } from './constants.js';
+import { PROFILE } from './constants.js';
+
 
 const utils = {
     calculateAverages: (playerId, votes, player) => {
@@ -45,7 +47,7 @@ const utils = {
 
     getInitials: (name) => {
         if (!name) return '??';
-        return name.substring(0, 2).toUpperCase();
+        return name.substring(0, PROFILE.INITIALS_LENGTH).toUpperCase();
     },
     // ============================================================================
     // FORMULA-BASED CLASSIFICATION SYSTEM
