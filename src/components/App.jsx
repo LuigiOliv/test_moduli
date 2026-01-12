@@ -111,6 +111,15 @@ function App() {
                                     storage.setCurrentUser(userWithAdmin);
                                     const loadedVotes = await storage.getVotes();
                                     setVotes(loadedVotes || []);
+                                    // ⬇️ ADD THESE LINES
+                                    const loadedMatches = await storage.getMatches();
+                                    setMatches(loadedMatches || []);
+                                    const allMatchVotes = [];
+                                    for (const match of loadedMatches || []) {
+                                        const mvs = await storage.getMatchVotes(match.id);
+                                        mvs.forEach(mv => allMatchVotes.push({ ...mv, matchId: match.id }));
+                                    }
+                                    setMatchVotes(allMatchVotes);
                                     if (!existingUser.preferredRole) setShowRoleModal(true);
                                 } else {
                                     setPendingEmail(email);
