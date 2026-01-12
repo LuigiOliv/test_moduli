@@ -28,7 +28,9 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
     const [selectedSkill, setSelectedSkill] = useState(null);
     const [showMoreOverall, setShowMoreOverall] = useState(false);
     const [showMoreMacros, setShowMoreMacros] = useState({ tecniche: false, tattiche: false, fisiche: false });
+    // NEW:
     const [activeTab, setActiveTab] = useState('overall');
+    const [showMoreMatches, setShowMoreMatches] = useState(false);
     const touchStartX = useRef(null);
     const touchEndX = useRef(null);
 
@@ -43,9 +45,11 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [view, selectedMacro, selectedSkill]);
 
+    // Add to useEffect dependency
     useEffect(() => {
         setShowMoreOverall(false);
         setShowMoreMacros({ tecniche: false, tattiche: false, fisiche: false });
+        setShowMoreMatches(false); // NEW
     }, [activeTab]);
 
     // Conta i voti fatti dall'utente corrente
@@ -63,23 +67,23 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
     const canViewLeaderboard = !hasVoteTargets || userVotesCount >= 3;
 
     // Calcola statistiche overall con formula
-    const playersWithOverall = useMemo(() => {
+    // Calculate players by matches played (only COMPLETED matches)
+    const playersWithMatches = useMemo(() => {
         return users
             .filter(u => !u.id.startsWith('seed'))
             .map(player => {
-                const averages = utils.calculateAverages(player.id, votes, player);
+                const matchCount = utils.countPlayerMatches(player.id, matches);
                 const voteCount = utils.countVotes(player.id, votes);
-
-                // Usa la formula se abbiamo i dati delle partite
+                const averages = utils.calculateAverages(player.id, votes, player);
                 const overall = matches.length > 0
                     ? utils.calculateFormulaBasedOverall(averages, player.id, matches, matchVotes, CLASSIFICATION_FORMULA)
                     : utils.calculateOverall(averages);
 
-                return { ...player, overall, voteCount, averages };
+                return { ...player, matchCount, voteCount, overall };
             })
-            .filter(p => p.overall !== null && p.voteCount >= 5)
-            .sort((a, b) => b.overall - a.overall);
-    }, [users, votes, matches, matchVotes]);
+            .filter(p => p.matchCount > 2) // Only players who played at least 1 match
+            .sort((a, b) => b.matchCount - a.matchCount);
+    }, [users, matches, votes, matchVotes]);
 
     // Funzione per calcolare classifica per macrocategoria
     const getPlayersForMacro = (macroCategory) => {
@@ -151,7 +155,8 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
     const tabs = [
         { id: 'overall', label: 'Generale', emoji: '🏆' },
         { id: 'macro', label: 'Macrocategorie', emoji: '📈' },
-        { id: 'skill', label: 'Skill', emoji: '⚡' }
+        { id: 'skill', label: 'Skill', emoji: '⚡' },
+        { id: 'matches', label: 'Partite', emoji: '⚽' }
     ];
     const tabOrder = tabs.map(tab => tab.id);
     const swipeThreshold = 60;
@@ -510,6 +515,54 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                                     </div>
                                 );
                             })
+                        )}
+                    </div>
+                </section>
+
+                <section className={`leaderboard-tabpanel ${activeTab === 'matches' ? '' : 'leaderboard-tabpanel--hidden'}`}>
+                    <div className="rankings-overall-section">
+                        <h3 className="rankings-section-title">⚽ Classifica Presenze</h3>
+                        <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '20px', textAlign: 'center' }}>
+                            Classifica basata sul numero di partite completate giocate
+                        </p>
+
+                        {playersWithMatches.length === 0 ? (
+                            <div className="no-votes">
+                                <p>Nessuna partita completata ancora.</p>
+                            </div>
+                        ) : (
+                            <div className="leaderboard-container">
+                                {playersWithMatches.slice(0, showMoreMatches ? undefined : 20).map((player, index) => (
+                                    <div
+                                        key={player.id}
+                                        className={`leaderboard-item ${index < 3 ? `rank-${index + 1}` : ''}`}
+                                        onClick={() => onViewProfile(player.id)}
+                                    >
+                                        <div className="rank-number">
+                                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                        </div>
+                                        <div className="avatar">
+                                            {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: '600', fontSize: '18px' }}>
+                                                {player.name} {player.isGoalkeeper && '🧤'}
+                                            </div>
+                                            <div style={{ fontSize: '13px', opacity: 0.8 }}>
+                                                {player.matchCount} partite
+                                                {player.overall && ` • OVR: ${utils.toBase10(player.overall).toFixed(1)}`}
+                                            </div>
+                                        </div>
+                                        <div style={{ fontWeight: '800', fontSize: '28px' }}>{player.matchCount}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {playersWithMatches.length > 20 && (
+                            <button className="btn-expand" onClick={() => setShowMoreMatches(!showMoreMatches)}>
+                                {showMoreMatches ? '⬆️ Mostra meno' : `⬇️ Mostra altri ${playersWithMatches.length - 20}`}
+                            </button>
                         )}
                     </div>
                 </section>

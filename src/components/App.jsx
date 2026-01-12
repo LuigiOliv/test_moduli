@@ -544,10 +544,12 @@ function App() {
                         />
                     )
                 ) : activeTab === 'valuta' ? (
+                    // NEW:
                     <PlayersListPage
                         users={users}
                         currentUser={currentUser}
                         votes={votes}
+                        matches={matches}
                         onSelectPlayer={setSelectedPlayer}
                     />
                 ) : activeTab === 'profilo' ? (

@@ -1,7 +1,7 @@
 // src/components/MatchesPage.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import storage from '../storage.js';
 import { MatchCard } from './Match.jsx';
 

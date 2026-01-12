@@ -62,7 +62,10 @@ const utils = {
                 if (match.status !== 'COMPLETED') return false;
                 const gialliPlayers = match.teams?.gialli || [];
                 const verdiPlayers = match.teams?.verdi || [];
-                return gialliPlayers.includes(playerId) || verdiPlayers.includes(playerId);
+                // OLD: return gialliPlayers.includes(playerId) || verdiPlayers.includes(playerId);
+                // NEW: Check if player object exists in team arrays
+                return gialliPlayers.some(p => p.playerId === playerId) ||
+                    verdiPlayers.some(p => p.playerId === playerId);
             })
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     },
@@ -226,6 +229,18 @@ const utils = {
             if (player) return player.name;
         }
         return playerId;
+    },
+
+    countPlayerMatches: (playerId, matches) => {
+        if (!matches || matches.length === 0) return 0;
+
+        return matches.filter(match => {
+            if (match.status !== 'COMPLETED') return false;
+            const gialliPlayers = match.teams?.gialli || [];
+            const verdiPlayers = match.teams?.verdi || [];
+            return gialliPlayers.some(p => p.playerId === playerId) ||
+                verdiPlayers.some(p => p.playerId === playerId);
+        }).length;
     }
 };
 

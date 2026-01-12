@@ -1,19 +1,32 @@
 // src/components/PlayersListPage.jsx
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
+// NEW:
+import { useMemo } from 'react';
 import utils from '../utils.js';
 
-function PlayersListPage({ users = [], currentUser, votes = [], onSelectPlayer }) {
-    const hasVoted = (playerId) => {
-        return votes.some(v => v.voterId === currentUser.id && v.playerId === playerId);
-    };
+function PlayersListPage({ users = [], currentUser, votes = [], matches = [], onSelectPlayer }) {
 
-    const playersToVote = users.filter(u => {
-        if (u.id === currentUser.id || u.id.startsWith('seed')) return false;
-        if (hasVoted(u.id)) return false;
-        if (currentUser.hasVotedOffline && u.isInitialPlayer) return false;
-        return true;
-    });
+    // Find this useMemo and modify the filter
+    const playersToVote = useMemo(() => {
+        if (!currentUser) return [];
+
+        return users
+            .filter(u => {
+                if (u.id === currentUser.id) return false;
+                if (u.id.startsWith('seed')) return false;
+
+                // NEW: Check minimum matches requirement
+                const matchCount = utils.countPlayerMatches(u.id, matches);
+                if (matchCount < 3) return false;
+
+                const hasVoted = votes.some(v =>
+                    v.voterId === currentUser.id && v.playerId === u.id
+                );
+                return !hasVoted;
+            })
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }, [users, currentUser, votes, matches]);
 
     return (
         <div className="section-container">
