@@ -44,6 +44,18 @@ function App() {
     const [showAntonioSelector, setShowAntonioSelector] = useState(false);
     const [antonioProfiles, setAntonioProfiles] = useState([]);
 
+    // 🔍 DEBUG: Expose to console
+    useEffect(() => {
+        window.debugData = { matches, matchVotes, users, votes };
+        console.log('📊 Debug data updated:', {
+            matches: matches.length,
+            matchVotes: matchVotes.length,
+            users: users.length,
+            votes: votes.length
+        });
+    }, [matches, matchVotes, users, votes]);
+
+
     // 🔧 DEBUG: Verifica storage mobile
     useEffect(() => {
         let unsubscribe;
