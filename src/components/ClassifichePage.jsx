@@ -658,7 +658,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                         )}
                     </div>
                 </section>
-                <section className={`leaderboard-tabpanel ${activeTab === 'rendimento' ? '' : 'leaderboard-tabpanel--hidden'}`}>
+                <section className={`leaderboard-tabpanel ${activeTab === 'performance' ? '' : 'leaderboard-tabpanel--hidden'}`}>
                     <div className="rankings-overall-section">
                         <h3 className="rankings-section-title">📊 Classifica Rendimento</h3>
                         <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '20px', textAlign: 'center' }}>
