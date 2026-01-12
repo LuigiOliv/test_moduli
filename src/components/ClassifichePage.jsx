@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import utils from '../utils.js';
-import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER, CLASSIFICATION_FORMULA, MATCH, VOTING, DISPLAY } from '../constants.js';
+import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER, CLASSIFICATION_FORMULA, MATCH, VOTING, DISPLAY, UI } from '../constants.js';
 
 /**
  * Pagina per visualizzare le classifiche (Rating, Skill, Portieri, etc.).
@@ -227,7 +227,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
         { id: 'performance', label: 'Rendimento', emoji: '📊' }
     ];
     const tabOrder = tabs.map(tab => tab.id);
-    const swipeThreshold = SWIPE_THRESHOLD_PX;
+    const swipeThreshold = UI.SWIPE_THRESHOLD_PX;
     const goToTabIndex = (index) => {
         if (index >= 0 && index < tabOrder.length) {
             setActiveTab(tabOrder[index]);
