@@ -640,13 +640,13 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                             Media voti delle ultime {CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE} partite
                         </p>
 
-                        {playersWithRendimento.length === 0 ? (
+                        {playersWithPerformance.length === 0 ? (
                             <div className="no-votes">
                                 <p>Nessun giocatore ha completato almeno {CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE} partite con voti disponibili.</p>
                             </div>
                         ) : (
                             <div className="leaderboard-container">
-                                {playersWithRendimento.slice(0, showMoreRendimento ? undefined : 20).map((player, index) => (
+                                {playersWithPerformance.slice(0, showMorePerformance ? undefined : 20).map((player, index) => (
                                     <div
                                         key={player.id}
                                         className={`leaderboard-item ${index < 3 ? `rank-${index + 1}` : ''}`}
@@ -675,9 +675,9 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                             </div>
                         )}
 
-                        {playersWithRendimento.length > 20 && (
-                            <button className="btn-expand" onClick={() => setShowMoreRendimento(!showMoreRendimento)}>
-                                {showMoreRendimento ? '⬆️ Mostra meno' : `⬇️ Mostra altri ${playersWithRendimento.length - 20}`}
+                        {playersWithPerformance.length > 20 && (
+                            <button className="btn-expand" onClick={() => setShowMorePerformance(!showMorePerformance)}>
+                                {showMorePerformance ? '⬆️ Mostra meno' : `⬇️ Mostra altri ${playersWithPerformance.length - 20}`}
                             </button>
                         )}
                     </div>
