@@ -20,10 +20,11 @@ function PlayersListPage({ users = [], currentUser, votes = [], matches = [], on
                 const matchCount = utils.countPlayerMatches(u.id, matches);
                 if (matchCount < 3) return false;
 
-                const hasVoted = votes.some(v =>
+                // Check if already voted
+                const alreadyVoted = votes.some(v =>
                     v.voterId === currentUser.id && v.playerId === u.id
                 );
-                return !hasVoted;
+                return !alreadyVoted;
             })
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [users, currentUser, votes, matches]);

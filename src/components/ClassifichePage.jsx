@@ -67,6 +67,24 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
     const canViewLeaderboard = !hasVoteTargets || userVotesCount >= 3;
 
     // Calcola statistiche overall con formula
+    const playersWithOverall = useMemo(() => {
+        return users
+            .filter(u => !u.id.startsWith('seed'))
+            .map(player => {
+                const averages = utils.calculateAverages(player.id, votes, player);
+                const voteCount = utils.countVotes(player.id, votes);
+
+                // Usa la formula se abbiamo i dati delle partite
+                const overall = matches.length > 0
+                    ? utils.calculateFormulaBasedOverall(averages, player.id, matches, matchVotes, CLASSIFICATION_FORMULA)
+                    : utils.calculateOverall(averages);
+
+                return { ...player, overall, voteCount, averages };
+            })
+            .filter(p => p.overall !== null && p.voteCount >= 5)
+            .sort((a, b) => b.overall - a.overall);
+    }, [users, votes, matches, matchVotes]);
+
     // Calculate players by matches played (only COMPLETED matches)
     const playersWithMatches = useMemo(() => {
         return users
@@ -81,7 +99,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
 
                 return { ...player, matchCount, voteCount, overall };
             })
-            .filter(p => p.matchCount > 2) // Only players who played at least 1 match
+            .filter(p => p.matchCount > 0)
             .sort((a, b) => b.matchCount - a.matchCount);
     }, [users, matches, votes, matchVotes]);
 
