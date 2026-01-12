@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import utils from '../utils.js';
-import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER, CLASSIFICATION_FORMULA, MATCH } from '../constants.js';
+import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER, CLASSIFICATION_FORMULA, MATCH, VOTING } from '../constants.js';
 
 /**
  * Pagina per visualizzare le classifiche (Rating, Skill, Portieri, etc.).
@@ -12,8 +12,6 @@ import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER, CLASSIFICATION_FORMULA, 
  * @param {object} currentUser - L'utente corrente.
  * @param {function} onViewProfile - Callback per aprire il profilo di un giocatore.
  */
-
-const RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 const getVoteTimestamp = (vote) => {
     const rawDate = vote.createdAt ?? vote.updatedAt ?? vote.date ?? vote.timestamp;
@@ -80,7 +78,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
             if (v.voterId !== currentUserId) return false;
             const ts = getVoteTimestamp(v);
             if (ts == null) return false;
-            return now - ts <= RECENT_WINDOW_MS;
+            return now - ts <= VOTING.RECENT_VOTES_WINDOW_MS;
         }).length;
     }, [votes, currentUserId]);
 
