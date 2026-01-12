@@ -32,7 +32,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
     const [showMoreMatches, setShowMoreMatches] = useState(false);
     const touchStartX = useRef(null);
     const touchEndX = useRef(null);
-
+    const [showMorePerformance, setShowMorePerformance] = useState(false);
     const currentUserId = currentUser?.id;
     const voteablePlayersCount = useMemo(() => {
         if (!currentUserId) return 0;
@@ -68,6 +68,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
         setShowMoreOverall(false);
         setShowMoreMacros({ tecniche: false, tattiche: false, fisiche: false });
         setShowMoreMatches(false); // NEW
+        setShowMorePerformance(false); // NEW
     }, [activeTab]);
 
     // Conta i voti fatti dall'utente corrente
@@ -169,6 +170,36 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
             .sort((a, b) => b.score - a.score);
     };
 
+    // Calcola rendimento degli ultimi 5 match per ogni giocatore
+    const playersWithPerformance = useMemo(() => {
+        return users
+            .filter(u => !u.id.startsWith('seed'))
+            .map(player => {
+                const matchHistory = utils.getPlayerMatchHistory(player.id, matches);
+                const performance = utils.calculatePerformance(
+                    player.id,
+                    matchHistory,
+                    matchVotes,
+                    CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE,
+                    CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE
+                );
+
+                const averages = utils.calculateAverages(player.id, votes, player);
+                const overall = matches.length > 0
+                    ? utils.calculateFormulaBasedOverall(averages, player.id, matches, matchVotes, CLASSIFICATION_FORMULA)
+                    : utils.calculateOverall(averages);
+
+                return {
+                    ...player,
+                    performance,
+                    matchCount: matchHistory.length,
+                    overall
+                };
+            })
+            .filter(p => p.performance !== null)
+            .sort((a, b) => b.performance - a.performance);
+    }, [users, matches, matchVotes, votes]);
+
     // Handler per apertura dettaglio macro
     const openMacroDetail = (macro) => {
         setSelectedMacro(macro);
@@ -192,10 +223,11 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
         { id: 'overall', label: 'Generale', emoji: '🏆' },
         { id: 'macro', label: 'Macrocategorie', emoji: '📈' },
         { id: 'skill', label: 'Skill', emoji: '⚡' },
-        { id: 'matches', label: 'Presenze', emoji: '⚽' }
+        { id: 'matches', label: 'Presenze', emoji: '⚽' },
+        { id: 'performance', label: 'Rendimento', emoji: '📊' }
     ];
     const tabOrder = tabs.map(tab => tab.id);
-    const swipeThreshold = 60;
+    const swipeThreshold = SWIPE_THRESHOLD_PX;
     const goToTabIndex = (index) => {
         if (index >= 0 && index < tabOrder.length) {
             setActiveTab(tabOrder[index]);
@@ -597,6 +629,55 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                         {playersWithMatches.length > 20 && (
                             <button className="btn-expand" onClick={() => setShowMoreMatches(!showMoreMatches)}>
                                 {showMoreMatches ? '⬆️ Mostra meno' : `⬇️ Mostra altri ${playersWithMatches.length - 20}`}
+                            </button>
+                        )}
+                    </div>
+                </section>
+                <section className={`leaderboard-tabpanel ${activeTab === 'rendimento' ? '' : 'leaderboard-tabpanel--hidden'}`}>
+                    <div className="rankings-overall-section">
+                        <h3 className="rankings-section-title">📊 Classifica Rendimento</h3>
+                        <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '20px', textAlign: 'center' }}>
+                            Media voti delle ultime {CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE} partite
+                        </p>
+
+                        {playersWithRendimento.length === 0 ? (
+                            <div className="no-votes">
+                                <p>Nessun giocatore ha completato almeno {CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE} partite con voti disponibili.</p>
+                            </div>
+                        ) : (
+                            <div className="leaderboard-container">
+                                {playersWithRendimento.slice(0, showMoreRendimento ? undefined : 20).map((player, index) => (
+                                    <div
+                                        key={player.id}
+                                        className={`leaderboard-item ${index < 3 ? `rank-${index + 1}` : ''}`}
+                                        onClick={() => onViewProfile(player.id)}
+                                    >
+                                        <div className="rank-number">
+                                            {index === DISPLAY.GOLD_POSITION ? '🥇' : index === DISPLAY.SILVER_POSITION ? '🥈' : index === DISPLAY.BRONZE_POSITION ? '🥉' : `${index + 1}.`}
+                                        </div>
+                                        <div className="avatar">
+                                            {player.avatar ? <img src={player.avatar} alt={player.name} /> : utils.getInitials(player.name)}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: '600', fontSize: '18px' }}>
+                                                {player.name} {player.isGoalkeeper && '🧤'}
+                                            </div>
+                                            <div style={{ fontSize: '13px', opacity: 0.8 }}>
+                                                {player.matchCount} partite
+                                                {player.overall && ` • OVR: ${utils.toBase10(player.overall).toFixed(1)}`}
+                                            </div>
+                                        </div>
+                                        <div style={{ fontWeight: '800', fontSize: '28px', color: 'var(--volt)' }}>
+                                            {player.performance.toFixed(2)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {playersWithRendimento.length > 20 && (
+                            <button className="btn-expand" onClick={() => setShowMoreRendimento(!showMoreRendimento)}>
+                                {showMoreRendimento ? '⬆️ Mostra meno' : `⬇️ Mostra altri ${playersWithRendimento.length - 20}`}
                             </button>
                         )}
                     </div>

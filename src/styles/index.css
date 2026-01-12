@@ -51,6 +51,7 @@ Project: Calcetto del Giovedì
 @import './pages/leaderboard.css';
 @import './pages/admin.css';
 @import './pages/results.css';
+@import './pages/matches.css';
 
 /* 5. FEATURES - Special features */
 @import './features/charts.css';

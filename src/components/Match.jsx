@@ -73,7 +73,7 @@ export function MatchCard({ match, currentUser, users, onClick }) {
                         <div className="match-info">
                             👥 {registrations.length}/{match.maxPlayers} {utils.renderGoalkeeperIcons(gkCount)}
                         </div>
-                        <div className="match-info" style={{ fontSize: '0.75rem' }}>
+                        <div className="match-info match-info--small">
                             Chiude: {utils.formatDeadline(match.registrationDeadlineForced)}
                         </div>
                     </>
@@ -83,7 +83,7 @@ export function MatchCard({ match, currentUser, users, onClick }) {
                         <div className="match-info">
                             Gialli {match.score.gialli} - {match.score.verdi} Verdi
                         </div>
-                        <div className="match-info" style={{ fontSize: '0.75rem' }}>
+                        <div className="match-info match-info--small">
                             🗳️ Vota entro domenica
                         </div>
                     </>
@@ -93,7 +93,7 @@ export function MatchCard({ match, currentUser, users, onClick }) {
                         <div className="match-info">
                             Gialli {match.score.gialli} - {match.score.verdi} Verdi
                         </div>
-                        <div className="match-info" style={{ fontSize: '0.75rem' }}>
+                        <div className="match-info match-info--small">
                             Top scorer: 🏆 {utils.getPlayerNameById(match.topScorer, users)}
                         </div>
                     </>
@@ -248,143 +248,83 @@ export function MatchRegistrationView({ match, currentUser, users, onBack, onUpd
                     <div className="detail-content">
                         {isClosed && match.teams && match.teams.gialli && match.teams.gialli.length > 0 ? (
                             <>
-                                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                    <h3 style={{ color: 'var(--volt)', fontSize: '1.8rem', marginBottom: '10px' }}>
-                                        ⚔️ SQUADRE ASSEGNATE
-                                    </h3>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                        Le squadre sono pronte per la partita!
-                                    </p>
+                                <div className="teams-header">
+                                    <h3>⚔️ SQUADRE ASSEGNATE</h3>
+                                    <p>Le squadre sono pronte per la partita!</p>
                                 </div>
 
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                                    gap: '20px',
-                                    marginBottom: '20px'
-                                }}>
+                                <div className="teams-grid">
                                     {/* SQUADRA GIALLI */}
-                                    <div style={{
-                                        background: 'rgba(255, 215, 0, 0.1)',
-                                        border: '2px solid #FFD700',
-                                        borderRadius: '8px',
-                                        padding: '20px'
-                                    }}>
-                                        <h4 style={{
-                                            color: '#FFD700',
-                                            fontSize: '1.5rem',
-                                            marginBottom: '15px',
-                                            textAlign: 'center',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '2px'
-                                        }}>
+                                    <div className="team-card team-card--yellow">
+                                        <h4 className="team-card__title">
                                             🟡 GIALLI ({match.teams.gialli.length})
                                         </h4>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            {match.teams.gialli.map((player, index) => (
-                                                <div key={player.playerId} style={{
-                                                    background: 'rgba(255, 255, 255, 0.05)',
-                                                    padding: '12px',
-                                                    borderRadius: '4px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '12px'
-                                                }}>
-                                                    <span style={{
-                                                        background: 'rgba(255, 215, 0, 0.3)',
-                                                        color: '#FFD700',
-                                                        width: '28px',
-                                                        height: '28px',
-                                                        borderRadius: '50%',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '14px',
-                                                        fontWeight: 'bold'
-                                                    }}>
-                                                        {index + 1}
-                                                    </span>
-                                                    <span style={{ flex: 1, fontSize: '15px' }}>
-                                                        {player.playerName}
-                                                        {player.playerId === currentUser.id && ' (Tu)'}
-                                                    </span>
-                                                    {player.isGoalkeeper && (
-                                                        <span style={{ fontSize: '18px' }}>🧤</span>
-                                                    )}
-                                                </div>
-                                            ))}
+                                        <div className="team-card__players">
+                                            {match.teams.gialli.map((player, index) => {
+                                                const fullUser = users.find(u => u.id === player.playerId);
+                                                const displayName = fullUser?.name || player.playerName;
+                                                const displayAvatar = fullUser?.avatar;
+
+                                                return (
+                                                    <div key={player.playerId} className="team-player">
+                                                        <span className="team-player__number">{index + 1}</span>
+                                                        <div className="avatar-mini">
+                                                            {displayAvatar
+                                                                ? <img src={displayAvatar} alt={displayName} />
+                                                                : utils.getInitials(displayName)}
+                                                        </div>
+                                                        <span className="team-player__name">
+                                                            {displayName}
+                                                            {player.playerId === currentUser.id && ' (Tu)'}
+                                                            {!fullUser && ' ⚠️'}
+                                                        </span>
+                                                        {player.isGoalkeeper && (
+                                                            <span className="team-player__gk-icon">🧤</span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 
                                     {/* SQUADRA VERDI */}
-                                    <div style={{
-                                        background: 'rgba(72, 187, 120, 0.1)',
-                                        border: '2px solid #48bb78',
-                                        borderRadius: '8px',
-                                        padding: '20px'
-                                    }}>
-                                        <h4 style={{
-                                            color: '#48bb78',
-                                            fontSize: '1.5rem',
-                                            marginBottom: '15px',
-                                            textAlign: 'center',
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '2px'
-                                        }}>
+                                    <div className="team-card team-card--green">
+                                        <h4 className="team-card__title">
                                             🟢 VERDI ({match.teams.verdi.length})
                                         </h4>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            {match.teams.verdi.map((player, index) => (
-                                                <div key={player.playerId} style={{
-                                                    background: 'rgba(255, 255, 255, 0.05)',
-                                                    padding: '12px',
-                                                    borderRadius: '4px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '12px'
-                                                }}>
-                                                    <span style={{
-                                                        background: 'rgba(72, 187, 120, 0.3)',
-                                                        color: '#48bb78',
-                                                        width: '28px',
-                                                        height: '28px',
-                                                        borderRadius: '50%',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '14px',
-                                                        fontWeight: 'bold'
-                                                    }}>
-                                                        {index + 1}
-                                                    </span>
-                                                    <span style={{ flex: 1, fontSize: '15px' }}>
-                                                        {player.playerName}
-                                                        {player.playerId === currentUser.id && ' (Tu)'}
-                                                    </span>
-                                                    {player.isGoalkeeper && (
-                                                        <span style={{ fontSize: '18px' }}>🧤</span>
-                                                    )}
-                                                </div>
-                                            ))}
+                                        <div className="team-card__players">
+                                            {match.teams.verdi.map((player, index) => {
+                                                const fullUser = users.find(u => u.id === player.playerId);
+                                                const displayName = fullUser?.name || player.playerName;
+                                                const displayAvatar = fullUser?.avatar;
+
+                                                return (
+                                                    <div key={player.playerId} className="team-player">
+                                                        <span className="team-player__number">{index + 1}</span>
+                                                        <div className="avatar-mini">
+                                                            {displayAvatar
+                                                                ? <img src={displayAvatar} alt={displayName} />
+                                                                : utils.getInitials(displayName)}
+                                                        </div>
+                                                        <span className="team-player__name">
+                                                            {displayName}
+                                                            {player.playerId === currentUser.id && ' (Tu)'}
+                                                            {!fullUser && ' ⚠️'}
+                                                        </span>
+                                                        {player.isGoalkeeper && (
+                                                            <span className="team-player__gk-icon">🧤</span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>
 
                                 {currentUser.isAdmin && (
-                                    <div style={{
-                                        background: 'rgba(102, 126, 234, 0.1)',
-                                        border: '1px solid rgba(102, 126, 234, 0.3)',
-                                        borderRadius: '8px',
-                                        padding: '15px',
-                                        textAlign: 'center',
-                                        marginTop: '20px'
-                                    }}>
-                                        <p style={{ color: '#667eea', fontSize: '14px', marginBottom: '10px' }}>
-                                            ℹ️ Per modificare le squadre, torna alla sezione Admin e clicca "👥 Assegna Squadre"
-                                        </p>
-                                        <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-                                            Per annullare tutto: "🔓 Riapri Iscrizioni" (cancellerà squadre e risultati)
-                                        </p>
+                                    <div className="admin-info-box">
+                                        <p>ℹ️ Per modificare le squadre, torna alla sezione Admin e clicca "👥 Assegna Squadre"</p>
+                                        <p>Per annullare tutto: "🔓 Riapri Iscrizioni" (cancellerà squadre e risultati)</p>
                                     </div>
                                 )}
                             </>
