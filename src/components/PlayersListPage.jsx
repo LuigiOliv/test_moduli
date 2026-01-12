@@ -20,6 +20,9 @@ function PlayersListPage({ users = [], currentUser, votes = [], matches = [], on
                 const matchCount = utils.countPlayerMatches(u.id, matches);
                 if (matchCount < 3) return false;
 
+                // Filter out initial players if user has voted offline
+                if (currentUser.hasVotedOffline && u.isInitialPlayer) return false;
+
                 // Check if already voted
                 const alreadyVoted = votes.some(v =>
                     v.voterId === currentUser.id && v.playerId === u.id
