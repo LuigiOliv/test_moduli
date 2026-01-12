@@ -3,8 +3,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import utils from '../utils.js';
-import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER, CLASSIFICATION_FORMULA } from '../constants.js';
-import { VOTING, DISPLAY, DEADLINES } from '../constants.js';
+import { ROLES, SKILLS, shortSKILLS, SKILLS_GOALKEEPER, CLASSIFICATION_FORMULA, MATCH } from '../constants.js';
 
 /**
  * Pagina per visualizzare le classifiche (Rating, Skill, Portieri, etc.).
@@ -38,8 +37,27 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
 
     const currentUserId = currentUser?.id;
     const voteablePlayersCount = useMemo(() => {
-        return users.filter(u => !u.id.startsWith('seed') && (!currentUserId || u.id !== currentUserId)).length;
-    }, [users, currentUserId]);
+        if (!currentUserId) return 0;
+
+        return users.filter(u => {
+            // Exclude self and seed users
+            if (u.id === currentUserId) return false;
+            if (u.id.startsWith('seed')) return false;
+
+            // Check minimum matches requirement
+            const matchCount = utils.countPlayerMatches(u.id, matches);
+            if (matchCount < MATCH.MIN_MATCHES_FOR_VOTING) return false;
+
+            // Filter out initial players if user has voted offline
+            if (currentUser?.hasVotedOffline && u.isInitialPlayer) return false;
+
+            // Check if already voted
+            const alreadyVoted = votes.some(v =>
+                v.voterId === currentUserId && v.playerId === u.id
+            );
+            return !alreadyVoted;
+        }).length;
+    }, [users, currentUserId, currentUser, votes, matches]);
     const hasVoteTargets = voteablePlayersCount > 0;
 
     // Scroll to top quando cambia la vista
@@ -176,7 +194,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
         { id: 'overall', label: 'Generale', emoji: '🏆' },
         { id: 'macro', label: 'Macrocategorie', emoji: '📈' },
         { id: 'skill', label: 'Skill', emoji: '⚡' },
-        { id: 'matches', label: 'Partite', emoji: '⚽' }
+        { id: 'matches', label: 'Presenze', emoji: '⚽' }
     ];
     const tabOrder = tabs.map(tab => tab.id);
     const swipeThreshold = 60;
@@ -219,9 +237,9 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
 
                 <div className="no-votes">
                     <h3>🔒 Classifica Bloccata</h3>
-                    <p>Per visualizzare le classifiche devi completare almeno {VOTING.MIN_VOTES_RECENT_FOR_LEADERBOARD} valutazioni negli ultimi {DEADLINES.VOTING_DEADLINE_DAYS} giorni</p>
+                    <p>Per visualizzare le classifiche devi completare almeno {VOTING.MIN_VOTES_RECENT_FOR_LEADERBOARD} valutazioni negli ultimi {DEADLINES.RECENT_VOTES_WINDOW} giorni</p>
                     <p style={{ marginTop: '15px', fontSize: '1.2rem', color: 'var(--volt)' }}>
-                        Hai completato: <strong>{userVotesCount}/{VOTING.MIN_VOTES_RECENT_FOR_LEADERBOARD}</strong> valutazioni negli ultimi {DEADLINES.VOTING_DEADLINE_DAYS} giorni
+                        Hai completato: <strong>{userVotesCount}/{VOTING.MIN_VOTES_RECENT_FOR_LEADERBOARD}</strong> valutazioni negli ultimi {DEADLINES.RECENT_VOTES_WINDOW} giorni
                     </p>
                     <p style={{ marginTop: '10px', opacity: '0.8' }}>
                         Vai alla sezione "Valuta" per votare altri giocatori!
@@ -542,7 +560,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                     <div className="rankings-overall-section">
                         <h3 className="rankings-section-title">⚽ Classifica Presenze</h3>
                         <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '20px', textAlign: 'center' }}>
-                            Classifica basata sul numero di partite completate giocate
+                            Classifica basata sul numero di partite giocate
                         </p>
 
                         {playersWithMatches.length === 0 ? (

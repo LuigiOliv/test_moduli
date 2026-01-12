@@ -89,6 +89,7 @@ export const VOTING = {
     MIN_VOTES_FOR_DISPLAY: 5,           // Numero minimo di valutazioni per comparire nelle classifiche
     MIN_VOTES_RECENT_FOR_LEADERBOARD: 3, // Numero minimo di valutazioni negli ultimi 7 giorni per visualizzare la classifica
     RECENT_VOTES_WINDOW_MS: 7 * 24 * 60 * 60 * 1000, // 7 giorni in millisecondi
+    RECENT_VOTES_WINDOW: 5,              // Numero di giorni nei quali contare i voti recenti         
     SEED_VOTES_COUNT: 8,                 // Numero di voti seed quando l'amministratore modifica le valutazioni
     VOTE_MIN: 1,                         // Valore minimo del voto
     VOTE_MAX: 10,                        // Valore massimo del voto

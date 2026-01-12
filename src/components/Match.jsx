@@ -397,29 +397,40 @@ export function MatchRegistrationView({ match, currentUser, users, onBack, onUpd
                                             <p>Nessun iscritto ancora. Sii il primo!</p>
                                         </div>
                                     ) : (
-                                        registrations.map(reg => (
-                                            <div key={reg.id} className={`player-item ${reg.isGoalkeeper ? 'gk' : ''}`}>
-                                                <div className="avatar">{utils.getInitials(reg.playerName)}</div>
-                                                <div className="player-info">
-                                                    <div className="player-name">
-                                                        {reg.playerName}
-                                                        {reg.playerId === currentUser.id && ' (Tu)'}
-                                                    </div>
-                                                    <div className="player-role">
-                                                        {reg.isGoalkeeper ? '🧤 Portiere' : 'Movimento'}
-                                                    </div>
-                                                </div>
+                                        registrations.map(reg => {
+                                            const fullUser = users.find(u => u.id === reg.playerId);
+                                            const displayName = fullUser?.name || reg.playerName; // Fallback to stored name if user deleted
+                                            const displayAvatar = fullUser?.avatar;
 
-                                                {(reg.playerId === currentUser.id || currentUser.isAdmin) && !isClosed && (
-                                                    <div
-                                                        className="unsubscribe-btn"
-                                                        onClick={() => handleUnregister(reg.playerId, reg.playerName)}
-                                                    >
-                                                        ✕
+                                            return (
+                                                <div key={reg.id} className={`player-item ${reg.isGoalkeeper ? 'gk' : ''}`}>
+                                                    <div className="avatar">
+                                                        {displayAvatar
+                                                            ? <img src={displayAvatar} alt={displayName} />
+                                                            : utils.getInitials(displayName)}
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))
+                                                    <div className="player-info">
+                                                        <div className="player-name">
+                                                            {displayName}
+                                                            {reg.playerId === currentUser.id && ' (Tu)'}
+                                                            {!fullUser && ' ⚠️'} {/* Show warning if user deleted */}
+                                                        </div>
+                                                        <div className="player-role">
+                                                            {reg.isGoalkeeper ? '🧤 Portiere' : 'Movimento'}
+                                                        </div>
+                                                    </div>
+
+                                                    {(reg.playerId === currentUser.id || currentUser.isAdmin) && !isClosed && (
+                                                        <div
+                                                            className="unsubscribe-btn"
+                                                            onClick={() => handleUnregister(reg.playerId, displayName)}
+                                                        >
+                                                            ✕
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
                                     )}
                                 </div>
 
