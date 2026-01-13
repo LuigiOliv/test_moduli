@@ -92,13 +92,14 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
             .map(player => {
                 const averages = utils.calculateAverages(player.id, votes, player);
                 const voteCount = utils.countVotes(player.id, votes);
+                const matchCount = utils.countPlayerMatches(player.id, matches);
 
                 // Usa la formula se abbiamo i dati delle partite
                 const overall = matches.length > 0
                     ? utils.calculateFormulaBasedOverall(averages, player.id, matches, matchVotes, CLASSIFICATION_FORMULA)
                     : utils.calculateOverall(averages);
 
-                return { ...player, overall, voteCount, averages };
+                return { ...player, overall, voteCount, matchCount, averages };
             })
             .filter(p => p.overall !== null && p.voteCount >= VOTING.MIN_VOTES_FOR_DISPLAY)
             .sort((a, b) => b.overall - a.overall);
@@ -170,35 +171,37 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
             .sort((a, b) => b.score - a.score);
     };
 
-    // Calcola rendimento degli ultimi 5 match per ogni giocatore
+    // Calcola rendimento degli ultimi 10 match per ogni giocatore
     const playersWithPerformance = useMemo(() => {
-        console.log('🔍 Rendimento Debug:', {
-            matchesLength: matches?.length,
-            matchVotesLength: matchVotes?.length,
-            usersLength: users?.length,
-            matches: matches,
-            matchVotes: matchVotes
-        });
+        // Get the last 10 matches overall (most recent first)
+        const recentMatches = matches
+            .filter(m => m.status === 'COMPLETED')
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE);
+
         return users
             .filter(u => !u.id.startsWith('seed'))
             .map(player => {
-                const matchHistory = utils.getPlayerMatchHistory(player.id, matches);
+                // Check how many of the recent matches this player participated in
+                const playerRecentMatches = recentMatches.filter(match => {
+                    const gialliPlayers = match.teams?.gialli || [];
+                    const verdiPlayers = match.teams?.verdi || [];
+                    return gialliPlayers.some(p => p.playerId === player.id) ||
+                        verdiPlayers.some(p => p.playerId === player.id);
+                });
 
-                // Check if player has enough matches
-                if (!matchHistory || matchHistory.length < CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE) {
-                    return { ...player, performance: null, matchCount: matchHistory?.length || 0 };
+                // Check if player has played enough matches in the window
+                if (playerRecentMatches.length < CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE) {
+                    return { ...player, performance: null, matchCount: playerRecentMatches.length };
                 }
 
-                const recentMatches = matchHistory.slice(0, CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE);
                 const ratings = [];
 
-                // Collect all ratings for this player from recent matches
-                recentMatches.forEach(match => {
-                    // Find all votes for this specific match
+                // Collect all ratings for this player from their matches in the window
+                playerRecentMatches.forEach(match => {
                     const matchVotesList = matchVotes.filter(mv => mv.matchId === match.id);
 
                     matchVotesList.forEach(voterData => {
-                        // voterData.votes is an object like { playerId: rating, ... }
                         if (voterData.votes && voterData.votes[player.id] !== undefined) {
                             ratings.push(voterData.votes[player.id]);
                         }
@@ -217,7 +220,7 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                 return {
                     ...player,
                     performance,
-                    matchCount: matchHistory.length,
+                    matchCount: playerRecentMatches.length, // How many of last 10 they played
                     overall
                 };
             })
@@ -244,14 +247,18 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
         setSelectedSkill(null);
     };
 
-    const tabs = [
+    const tabsRow1 = [
         { id: 'overall', label: 'Generale', emoji: '🏆' },
-        { id: 'macro', label: 'Macrocategorie', emoji: '📈' },
-        { id: 'skill', label: 'Skill', emoji: '⚡' },
-        { id: 'matches', label: 'Presenze', emoji: '⚽' },
-        { id: 'performance', label: 'Rendimento', emoji: '📊' }
+        { id: 'performance', label: 'Rendimento ultime 10', emoji: '📊' },
+        { id: 'matches', label: 'Presenze totali', emoji: '⚽' }
     ];
+    const tabsRow2 = [
+        { id: 'macro', label: 'Vista per Macrocategorie', emoji: '📈' },
+        { id: 'skill', label: 'Vista per Skill', emoji: '⚡' }
+    ];
+    const tabs = [...tabsRow1, ...tabsRow2]; // Per mantenere compatibilità con swipe
     const tabOrder = tabs.map(tab => tab.id);
+
     const swipeThreshold = UI.SWIPE_THRESHOLD_PX;
     const goToTabIndex = (index) => {
         if (index >= 0 && index < tabOrder.length) {
@@ -407,19 +414,33 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
     return (
         <div className="section-container">
             <div className="section-header">
-                <h2>📊 Classifiche Complete</h2>
+                <h2>📊 Classifiche</h2>
             </div>
-            <div className="leaderboard-tabs">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        className={`leaderboard-tab ${activeTab === tab.id ? 'leaderboard-tab--active' : ''}`}
-                        onClick={() => setActiveTab(tab.id)}
-                    >
-                        <span>{tab.emoji}</span>
-                        <span>{tab.label}</span>
-                    </button>
-                ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="leaderboard-tabs">
+                    {tabsRow1.map(tab => (
+                        <button
+                            key={tab.id}
+                            className={`leaderboard-tab ${activeTab === tab.id ? 'leaderboard-tab--active' : ''}`}
+                            onClick={() => setActiveTab(tab.id)}
+                        >
+                            <span>{tab.emoji}</span>
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
+                <div className="leaderboard-tabs">
+                    {tabsRow2.map(tab => (
+                        <button
+                            key={tab.id}
+                            className={`leaderboard-tab ${activeTab === tab.id ? 'leaderboard-tab--active' : ''}`}
+                            onClick={() => setActiveTab(tab.id)}
+                        >
+                            <span>{tab.emoji}</span>
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
             <p className="leaderboard-swipe-hint">↔️ Swipe per cambiare tab</p>
             <div
@@ -446,7 +467,11 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: '600', fontSize: '18px' }}>{player.name} {player.isGoalkeeper && '🧤'}</div>
-                                        <div style={{ fontSize: '13px', opacity: 0.8 }}>{player.voteCount} valutazioni</div>
+                                        <div style={{ fontSize: '13px', opacity: 0.8 }}>
+                                            {player.voteCount} valutazioni
+                                            {player.matchCount > 0 && ` + ${player.matchCount} partite con voto`}
+
+                                        </div>
                                     </div>
                                     <div style={{ fontWeight: '800', fontSize: '28px' }}>{utils.toBase10(player.overall).toFixed(2)}</div>
                                 </div>
@@ -658,16 +683,17 @@ function ClassifichePage({ users = [], votes = [], matches = [], matchVotes = []
                         )}
                     </div>
                 </section>
+
                 <section className={`leaderboard-tabpanel ${activeTab === 'performance' ? '' : 'leaderboard-tabpanel--hidden'}`}>
                     <div className="rankings-overall-section">
                         <h3 className="rankings-section-title">📊 Classifica Rendimento</h3>
                         <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '20px', textAlign: 'center' }}>
-                            Media voti delle ultime {CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE} partite
+                            Media voti delle ultime {CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE} partite (minimo {CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE} presenze)
                         </p>
 
                         {playersWithPerformance.length === 0 ? (
                             <div className="no-votes">
-                                <p>Nessun giocatore ha completato almeno {CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE} partite con voti disponibili.</p>
+                                <p>Nessun giocatore ha giocato almeno {CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE} delle ultime {CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE} partite con voti disponibili.</p>
                             </div>
                         ) : (
                             <div className="leaderboard-container">

@@ -1,7 +1,7 @@
 // src/utils.js
 // © 2025 Luigi Oliviero | Calcetto Rating App | Tutti i diritti riservati
 
-import { SKILLS, SKILLS_GOALKEEPER, getSkillsForPlayer } from './constants.js';
+import { SKILLS, SKILLS_GOALKEEPER, getSkillsForPlayer, CLASSIFICATION_FORMULA } from './constants.js';
 import { PROFILE } from './constants.js';
 
 
@@ -73,24 +73,44 @@ const utils = {
     },
 
     /**
-     * Calcola il rendimento recente (media delle ultime N partite)
-     * Ritorna null se il giocatore ha meno di minMatches partite
+     * Calcola il rendimento (performance) di un giocatore basato sulle ultime N partite.
+     * @param {string} playerId - ID del giocatore
+     * @param {Array} allMatches - Tutte le partite (viene presa la finestra delle ultime N)
+     * @param {Array} matchVotes - Tutti i voti delle partite
+     * @param {number} windowSize - Dimensione finestra (default 10)
+     * @param {number} minMatchesInWindow - Minimo partite giocate nella finestra (default 3)
      */
-    calculatePerformance: (playerId, matchHistory, matchVotes, recentCount = 5, minMatches = 5) => {
-        if (!matchHistory || matchHistory.length < minMatches) {
-            return null; // Performance = 0 contribution
-        }
+    calculatePerformance: (playerId, allMatches, matchVotes, windowSize = 10, minMatchesInWindow = 3) => {
+        // Get the last N matches overall (most recent first)
+        const recentMatches = allMatches
+            .filter(m => m.status === 'COMPLETED')
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, windowSize);
 
-        const recentMatches = matchHistory.slice(0, recentCount);
+        // Check how many of those matches this player participated in
+        const playerMatches = recentMatches.filter(match => {
+            const gialliPlayers = match.teams?.gialli || [];
+            const verdiPlayers = match.teams?.verdi || [];
+            return gialliPlayers.some(p => p.playerId === playerId) ||
+                verdiPlayers.some(p => p.playerId === playerId);
+        });
+
+        // If player hasn't played any matches in the window, return null
+        if (playerMatches.length === 0) {
+            return null;  // No data = no contribution
+        }
+        // Note: minMatchesInWindow is only used for "Rendimento" ranking visibility
+        // For OVR calculation, we use any matches available (1, 2, or more)
+
         const ratings = [];
 
-        recentMatches.forEach(match => {
-            const matchVoteData = matchVotes.find(mv => mv.matchId === match.id);
-            if (!matchVoteData || !matchVoteData.votes) return;
+        // Collect all ratings for this player from their matches in the window
+        playerMatches.forEach(match => {
+            const matchVotesList = matchVotes.filter(mv => mv.matchId === match.id);
 
-            Object.values(matchVoteData.votes).forEach(voterVotes => {
-                if (voterVotes[playerId]?.rating) {
-                    ratings.push(voterVotes[playerId].rating);
+            matchVotesList.forEach(voterData => {
+                if (voterData.votes && voterData.votes[playerId] !== undefined) {
+                    ratings.push(voterData.votes[playerId]);
                 }
             });
         });
@@ -119,12 +139,12 @@ const utils = {
         const matchHistory = utils.getPlayerMatchHistory(playerId, matches);
         const performance = utils.calculatePerformance(
             playerId,
-            matchHistory,
+            matches,  // ✅ CORRECT - all matches, not just player's
             matchVotes,
-            formula.RECENT_MATCHES_FOR_PERFORMANCE,
-            formula.MIN_MATCHES_FOR_PERFORMANCE
+            CLASSIFICATION_FORMULA.RECENT_MATCHES_FOR_PERFORMANCE,
+            CLASSIFICATION_FORMULA.MIN_MATCHES_FOR_PERFORMANCE
         );
-        const consistency = utils.calculateConsistency(matchHistory, formula.CONSISTENCY_WINDOW);
+        const consistency = utils.calculateConsistency(matchHistory, CLASSIFICATION_FORMULA.CONSISTENCY_WINDOW);
 
         // Converti currentVote in scala 1-10
         const currentVote10 = utils.toBase10(currentVote);

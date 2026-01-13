@@ -72,12 +72,12 @@ export const getShortSkillsForPlayer = (player) => {
 // =========================================================================
 
 export const CLASSIFICATION_FORMULA = {
-    CURRENT_WEIGHT: 0.8,              // Peso voto attuale (80%)
-    PERFORMANCE_WEIGHT: 0.15,         // Peso rendimento recente (15%)
+    CURRENT_WEIGHT: 0.80,              // Peso voto attuale (80%)
+    PERFORMANCE_WEIGHT: 0.40,         // Peso rendimento recente (40%)
     CONSISTENCY_WEIGHT: 0.05,         // Peso costanza (5%)
-    RECENT_MATCHES_FOR_PERFORMANCE: 5, // Numero partite per calcolare rendimento
+    RECENT_MATCHES_FOR_PERFORMANCE: 10, // Finestra partite per calcolare rendimento
     CONSISTENCY_WINDOW: 5,            // Numero partite per calcolare costanza
-    MIN_MATCHES_FOR_PERFORMANCE: 5     // Minimo partite per contributo performance
+    MIN_MATCHES_FOR_PERFORMANCE: 3     // Minimo partite nella finestra per essere eleggibili
 };
 
 // Add these new constant groups to your existing constants.js file:
